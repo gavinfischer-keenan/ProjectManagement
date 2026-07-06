@@ -188,8 +188,7 @@ export default function TaskEditModal({
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  /* ── Other tasks for dependency dropdown ────────────────── */
-  const otherTasks = allTasks.filter((t) => t.id !== task.id);
+  const otherTasks = allTasks.filter((t) => t.id !== task.id && t.parentId === task.parentId);
 
   return (
     <div className="modal-overlay" ref={overlayRef} onClick={handleOverlayClick}>
