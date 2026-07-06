@@ -1,8 +1,33 @@
-# Hawaii Project Manager (v1.0.0)
+# Hawaii Project Manager (v1.0.1)
+
+> ⚠️ **v1.0.1 — NEEDS BUG CHECKING**
+> The Vendor Contact and Shopping List features added in this release are new and have not yet been through a full QA pass. Core 1.0.0 functionality is stable. Please report any issues.
 
 Hawaii PM is a lightweight, modern project management and task tracking application designed for construction and maintenance projects. It features an intuitive, fast React-based user interface designed for efficiency.
 
-## Features
+## What's New in v1.0.1
+
+### 📇 Vendor / Contact Management
+A full CRM-lite vendor contact system integrated directly into the app.
+
+- **Vendors view** (left sidebar) — Browse all vendor contacts in switchable **List view** (Company | Name | Phone table) or **Tile view** (business-card grid). Sorted alphabetically by company.
+- **Vendor Detail page** — Full-screen editable contact card with Name, Company, Phone, Address, Account Number, and a large free-text Notes field.
+- **CRM Interaction Log** — On each vendor's detail page, log every phone call, text, or email with a date, contact type badge, and free-text notes. Edit or delete any entry. **"Create Task"** button in the log entry form creates a new project task pre-populated with *"Follow up with [Company]"* and the vendor already linked.
+- **Vendor tab on Task Details** — Each task can have one vendor assigned to it via a new **📇 Vendor** tab in the task edit modal. Includes a searchable dropdown and an inline **"+ New Vendor"** button to create a vendor stub (Company, Name, Phone) without leaving the task — returns you directly to the task after creation. Full vendor details can be fleshed out later via the Vendors page.
+- **Import Data** moved to the bottom of the sidebar to make room.
+
+### 🛒 Shopping List
+A dynamic, aggregated shopping list across all active tasks.
+
+- **Supplies tab on Task Details** — Add supply items (Name, Qty, Cost) to any task via a new **🛒 Supplies** tab in the task edit modal. Items can be added/removed at any time.
+- **Shopping List view** (left sidebar) — Aggregates all supply items from all incomplete tasks, grouped by task with the task name and due date shown. Live item count badge.
+- **Smart check-off logic:**
+  - Checking off an item prompts: *"Mark [Task Name] complete?"*
+  - **Yes** → task is marked complete; entire task group disappears from the list automatically.
+  - **No** → the item is individually dismissed from the shopping list (flagged `checkedOff: true`) and will not re-appear — even though the task remains open.
+- Completed tasks are automatically excluded from the shopping list.
+
+## Features (v1.0.0 Core)
 
 - **Summary Dashboard:** Provides an at-a-glance view of project progress, complete with a visual overall progress ring, section-level completion stats, and a feed of recently completed tasks. Section labels and status counts are fully interactive; clicking them takes you directly to that section on the Project Tracker, and clicking status counts with a single task will open that task's details modal immediately.
 - **Project Tracker:** A robust, hierarchical table view of your tasks. Features include dependency tracking (pre-requisites), drag-and-drop ordering, indentation (sub-tasks), and inline editing.

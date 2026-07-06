@@ -12,7 +12,12 @@ const NAV_ITEMS = [
   { id: 'daily',       icon: '🗓️', label: 'Daily Tasks' },
   { id: 'completed',   icon: '✅', label: 'Completed' },
   { id: 'maintenance', icon: '🔧', label: 'Maintenance Log' },
-  { id: 'import',      icon: '📥', label: 'Import Data' },
+  { id: 'vendors',     icon: '📇', label: 'Vendors' },
+  { id: 'shopping',    icon: '🛒', label: 'Shopping List' },
+];
+
+const NAV_BOTTOM = [
+  { id: 'import', icon: '📥', label: 'Import Data' },
 ];
 
 const VIEW_TITLES = {
@@ -22,6 +27,8 @@ const VIEW_TITLES = {
   daily:       'Daily Tasks',
   completed:   'Completed Tasks',
   maintenance: 'Maintenance Log',
+  vendors:     'Vendors',
+  shopping:    'Shopping List',
   import:      'Import Data',
 };
 
@@ -40,6 +47,18 @@ export default function Layout({ currentView, onNavigate, children, tasks, maint
             <button
               key={item.id}
               className={`nav-item ${currentView === item.id ? 'active' : ''}`}
+              onClick={() => onNavigate(item.id)}
+              title={item.label}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-label">{item.label}</span>
+            </button>
+          ))}
+          <div className="sidebar-nav-spacer" />
+          {NAV_BOTTOM.map((item) => (
+            <button
+              key={item.id}
+              className={`nav-item nav-item-bottom ${currentView === item.id ? 'active' : ''}`}
               onClick={() => onNavigate(item.id)}
               title={item.label}
             >

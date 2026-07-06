@@ -11,10 +11,13 @@ import CompletedView from './components/CompletedView.jsx';
 import MaintenanceLog from './components/MaintenanceLog.jsx';
 import ImportWizard from './components/ImportWizard.jsx';
 import GanttTimeline from './components/GanttTimeline.jsx';
+import VendorPanel from './components/VendorPanel.jsx';
+import ShoppingList from './components/ShoppingList.jsx';
 import {
   fetchTasks, fetchMaintenance,
   updateTask, deleteTask, createTask,
   createMaintenance, updateMaintenance, deleteMaintenance,
+  fetchVendors, createVendor,
 } from './api/client.js';
 
 const VIEWS = {
@@ -24,6 +27,8 @@ const VIEWS = {
   daily:        'daily',
   completed:    'completed',
   maintenance:  'maintenance',
+  vendors:      'vendors',
+  shopping:     'shopping',
   import:       'import',
 };
 
@@ -31,11 +36,14 @@ export default function App() {
   const [currentView, setCurrentView] = useState(VIEWS.tracker);
   const [tasks, setTasks] = useState([]);
   const [maintenanceEntries, setMaintenanceEntries] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
 
   /* Dashboard Navigation State */
   const [focusedSectionId, setFocusedSectionId] = useState(null);
   const [focusedTaskId, setFocusedTaskId] = useState(null);
+  /* Vendor-triggered task creation defaults */
+  const [vendorTaskDefaults, setVendorTaskDefaults] = useState(null);
 
   /* ── Data Loading ───────────────────────────────────────── */
   const refreshTasks = useCallback(async () => {
@@ -56,14 +64,23 @@ export default function App() {
     }
   }, []);
 
+  const refreshVendors = useCallback(async () => {
+    try {
+      const data = await fetchVendors();
+      setVendors(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to fetch vendors:', err);
+    }
+  }, []);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      await Promise.all([refreshTasks(), refreshMaintenance()]);
+      await Promise.all([refreshTasks(), refreshMaintenance(), refreshVendors()]);
       setLoading(false);
     };
     load();
-  }, [refreshTasks, refreshMaintenance]);
+  }, [refreshTasks, refreshMaintenance, refreshVendors]);
 
   /* ── Task Handlers ──────────────────────────────────────── */
   const handleTaskUpdate = useCallback(async (id, updates) => {
@@ -99,6 +116,17 @@ export default function App() {
       return created; // Return so callers (e.g. prerequisite flow) can use the new ID
     } catch (err) {
       console.error('Failed to create task:', err);
+      return null;
+    }
+  }, []);
+
+  const handleVendorCreate = useCallback(async (stub) => {
+    try {
+      const created = await createVendor(stub);
+      setVendors(prev => [...prev, created]);
+      return created;
+    } catch (err) {
+      console.error('Failed to create vendor stub:', err);
       return null;
     }
   }, []);
@@ -177,15 +205,18 @@ export default function App() {
         return (
           <TaskTable
             tasks={tasks}
+            vendors={vendors}
             maintenanceEntries={maintenanceEntries}
             onTaskUpdate={handleTaskUpdate}
             onTaskDelete={handleTaskDelete}
             onTaskCreate={handleTaskCreate}
             onTasksRefresh={refreshTasks}
             onMilestoneComplete={handleMilestoneComplete}
+            onVendorCreate={handleVendorCreate}
             focusedSectionId={focusedSectionId}
             focusedTaskId={focusedTaskId}
-            onClearFocus={() => { setFocusedSectionId(null); setFocusedTaskId(null); }}
+            vendorTaskDefaults={vendorTaskDefaults}
+            onClearFocus={() => { setFocusedSectionId(null); setFocusedTaskId(null); setVendorTaskDefaults(null); }}
           />
         );
 
@@ -243,6 +274,28 @@ export default function App() {
 
       case VIEWS.import:
         return <ImportWizard onImportComplete={handleImportComplete} />;
+
+      case VIEWS.vendors:
+        return (
+          <VendorPanel
+            vendors={vendors}
+            onVendorsChange={setVendors}
+            tasks={tasks}
+            onCreateTask={(defaults) => {
+              setVendorTaskDefaults(defaults);
+              setCurrentView(VIEWS.tracker);
+            }}
+          />
+        );
+
+      case VIEWS.shopping:
+        return (
+          <ShoppingList
+            tasks={tasks}
+            onTaskUpdate={handleTaskUpdate}
+            onTasksRefresh={refreshTasks}
+          />
+        );
 
       default:
         return null;

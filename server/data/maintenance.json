@@ -1,3 +1,18 @@
 {
-  "entries": []
+  "entries": [
+    {
+      "id": "995a3d22-a1f9-4a98-a60f-a5298ea19902",
+      "description": "No bugs for you!",
+      "taskId": "ebad00ff-1fa6-45c0-a9e1-c10271048947",
+      "dateOfRepair": "2026-07-06",
+      "dateWhenFixed": "2026-07-06",
+      "newInstallation": false,
+      "newInstallationDate": null,
+      "notes": "Auto-logged when task \"Get Terminix to update the inground termite protection\" was marked complete.",
+      "isMilestone": true,
+      "milestoneText": "No bugs for you!",
+      "sectionId": "e5cdcc58-dd50-4297-916a-932dca404d69",
+      "sectionName": "Realtor and their help"
+    }
+  ]
 }

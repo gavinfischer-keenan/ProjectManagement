@@ -14,17 +14,19 @@ export default function CreateTaskModal({
   onClose,
   defaultType = 'task',
   defaultParentId = null,
+  prefill = null,   // { name, vendorId, notes } from vendor CRM
 }) {
   const [tab, setTab] = useState(defaultType === 'section' ? 'section' : 'task');
   const [form, setForm] = useState({
-    name: '',
-    notes: '',
+    name: prefill?.name || '',
+    notes: prefill?.notes || '',
     parentId: defaultParentId || '',
     targetDateStart: '',
     targetDateFinish: '',
     duration: '',
     status: 'Not Started',
     percentComplete: 0,
+    vendorId: prefill?.vendorId || '',
   });
   const [error, setError] = useState('');
   const nameRef = useRef(null);
