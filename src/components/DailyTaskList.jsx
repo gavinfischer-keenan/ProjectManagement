@@ -1,16 +1,19 @@
-import React, { useMemo, useCallback } from 'react';
-import { today, isLate, formatDate, daysOverdue } from '../utils/dateUtils.js';
-import { updateTask } from '../api/client.js';
+import React, { useState, useMemo, useCallback } from 'react';
+import { today, formatDate, isoToDate } from '../utils/dateUtils.js';
+import TaskEditModal from './TaskEditModal.jsx';
 
 export default function DailyTaskList({ tasks = [], onTaskUpdate, onShowMaintenancePrompt }) {
   const todayStr = today();
+  const [editingTask, setEditingTask] = useState(null);
 
-  /* Look up whether a dependency task is incomplete */
-  const isBlocked = useCallback(
-    (task) => {
-      if (!task.dependsOnTaskId) return false;
-      const dep = tasks.find((t) => t.id === task.dependsOnTaskId);
-      return dep && !dep.dateFinished;
+  /* Helper: parent name logic (walks up to get top-level Section) */
+  const getSectionName = useCallback(
+    (taskId) => {
+      if (!taskId) return 'Uncategorized';
+      const t = tasks.find((x) => x.id === taskId);
+      if (!t) return 'Uncategorized';
+      if (!t.parentId) return t.name;
+      return getSectionName(t.parentId);
     },
     [tasks]
   );
@@ -22,192 +25,144 @@ export default function DailyTaskList({ tasks = [], onTaskUpdate, onShowMaintena
   );
 
   /* Categorize */
-  const { toDo, inProgress, unscheduled } = useMemo(() => {
-    const toDo = [];
-    const inProgress = [];
-    const unscheduled = [];
+  const { delayed, sections } = useMemo(() => {
+    const delayed = [];
+    const sectionMap = new Map();
 
     for (const t of leafTasks) {
-      if (t.dateFinished) continue; // already finished
-      if (isBlocked(t)) continue; // do not show blocked tasks
+      if (t.status === 'Completed') continue; 
 
-      if (t.status === 'In Progress') {
-        inProgress.push(t);
-      } else if (!t.targetDateStart) {
-        unscheduled.push(t);
-      } else if (t.targetDateStart <= todayStr) {
-        toDo.push(t);
+      const isDelayed = !!t.delayed;
+      const isInProgress = t.status === 'In Progress';
+      
+      let isUrgent = false;
+      if (t.status === 'Not Started' && t.targetDateFinish) {
+        const target = isoToDate(t.targetDateFinish);
+        if (target) {
+          const now = new Date();
+          const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+          const diff = target.getTime() - todayUTC;
+          const days = diff / 86400000;
+          if (days <= 5) isUrgent = true;
+        }
+      }
+
+      if (isDelayed) {
+        delayed.push(t);
+      } else if (isInProgress || isUrgent) {
+        const secName = getSectionName(t.id);
+        if (!sectionMap.has(secName)) sectionMap.set(secName, []);
+        sectionMap.get(secName).push({ ...t, _isUrgent: isUrgent });
       }
     }
 
-    // Sort toDo by earliest target finish date
-    toDo.sort((a, b) => (a.targetDateFinish || '').localeCompare(b.targetDateFinish || ''));
+    const sectionEntries = Array.from(sectionMap.entries()).map(([name, items]) => {
+      // sort items: in progress first, then by date
+      items.sort((a, b) => {
+        if (a.status === 'In Progress' && b.status !== 'In Progress') return -1;
+        if (b.status === 'In Progress' && a.status !== 'In Progress') return 1;
+        return (a.targetDateFinish || '').localeCompare(b.targetDateFinish || '');
+      });
+      return { name, items };
+    });
+    
+    // Sort sections alphabetically
+    sectionEntries.sort((a, b) => a.name.localeCompare(b.name));
 
-    return { toDo, inProgress, unscheduled };
-  }, [leafTasks, todayStr, isBlocked]);
+    return { delayed, sections: sectionEntries };
+  }, [leafTasks, getSectionName]);
 
-  const isEmpty = toDo.length === 0 && inProgress.length === 0 && unscheduled.length === 0;
+  const isEmpty = delayed.length === 0 && sections.length === 0;
 
-  /* Quick actions */
-  const handleStart = useCallback(
-    async (task) => {
-      try {
-        const updated = await updateTask(task.id, {
-          dateStarted: todayStr,
-          status: 'In Progress',
-        });
-        if (onTaskUpdate) onTaskUpdate(updated);
-      } catch (err) {
-        console.error('Failed to start task:', err);
-      }
-    },
-    [todayStr, onTaskUpdate]
-  );
+  const handleRowClick = (task) => {
+    const original = tasks.find(x => x.id === task.id);
+    if (original) setEditingTask(original);
+  };
 
-  const handleComplete = useCallback(
-    async (task) => {
-      try {
-        const updated = await updateTask(task.id, {
-          dateFinished: todayStr,
-          status: 'Completed',
-          percentComplete: 100,
-        });
-        if (onTaskUpdate) onTaskUpdate(updated);
-        if (onShowMaintenancePrompt) onShowMaintenancePrompt(task);
-      } catch (err) {
-        console.error('Failed to complete task:', err);
-      }
-    },
-    [todayStr, onTaskUpdate, onShowMaintenancePrompt]
-  );
-
-  /* Helper: parent name */
-  const parentName = useCallback(
-    (task) => {
-      if (!task.parentId) return null;
-      const parent = tasks.find((t) => t.id === task.parentId);
-      return parent ? parent.name : null;
-    },
-    [tasks]
-  );
-
-  /* Render a single task card */
-  function TaskCard({ task }) {
-    const blocked = isBlocked(task);
-    const overdueDays = daysOverdue(task);
-
-    return (
-      <div className={`task-card glass-panel-sm fade-in-up ${blocked ? 'task-card--blocked' : ''}`}>
-        <div className="task-card__header">
-          <div>
-            <div className="task-card__name">
-              {blocked && <span className="task-card__blocked-icon">🔒</span>}
-              {task.name}
-            </div>
-            {parentName(task) && (
-              <div className="task-card__parent">{parentName(task)}</div>
-            )}
-          </div>
-          {overdueDays > 0 && (
-            <span className="task-card__overdue-badge">
-              {overdueDays}d overdue
-            </span>
-          )}
-        </div>
-
-        <div className="task-card__meta">
-          {task.targetDateFinish && (
-            <span className="task-card__meta-item">
-              📅 {formatDate(task.targetDateFinish)}
-            </span>
-          )}
-          {task.percentComplete != null && (
-            <span className="task-card__meta-item">
-              📊 {task.percentComplete}%
-            </span>
-          )}
-          {task.status && (
-            <span className="task-card__meta-item">
-              ● {task.status}
-            </span>
-          )}
-        </div>
-
-        <div className="task-card__actions">
-          {!task.dateStarted && (
-            <button
-              className="btn btn--primary btn--sm"
-              disabled={blocked}
-              onClick={() => handleStart(task)}
-              title={blocked ? 'Blocked by dependency' : 'Start task'}
-            >
-              ▶ Start
-            </button>
-          )}
-          {!task.dateFinished && (
-            <button
-              className="btn btn--primary btn--sm"
-              onClick={() => handleComplete(task)}
-            >
-              ✓ Complete
-            </button>
-          )}
-          <button className="btn btn--ghost btn--sm">✏️ Edit</button>
-        </div>
-      </div>
-    );
-  }
-
-  /* Render a section */
-  function Section({ title, titleClass, badgeClass, items }) {
-    if (items.length === 0) return null;
-    return (
-      <div className="task-section">
-        <div className="task-section__header">
-          <span className={`task-section__title ${titleClass}`}>{title}</span>
-          <span className={`count-badge ${badgeClass}`}>{items.length}</span>
-        </div>
-        <div className="stagger-children">
-          {items.map((t) => (
-            <TaskCard key={t.id} task={t} />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const handleSaveEdit = async (updatedData) => {
+    if (onTaskUpdate) {
+      await onTaskUpdate(updatedData); // Note: App.jsx handleDailyTaskUpdate expects (updatedTask)
+    }
+    setEditingTask(null);
+  };
 
   return (
-    <div>
-      <h2 className="section-title">📋 Today&rsquo;s Tasks</h2>
-      <p className="section-subtitle">{formatDate(todayStr)}</p>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div>
+          <h2 className="section-title" style={{ marginBottom: '0.25rem' }}>📋 Action Items</h2>
+          <p className="section-subtitle" style={{ margin: 0 }}>{formatDate(todayStr)}</p>
+        </div>
+      </div>
 
       {isEmpty ? (
         <div className="empty-state glass-panel fade-in-up">
-          <div className="empty-state__icon">🎉</div>
-          <div className="empty-state__text">All caught up!</div>
-          <div className="empty-state__subtext">No active, in-progress, or unscheduled tasks.</div>
+           <div className="empty-state__icon">🎉</div>
+           <div className="empty-state__text">All caught up!</div>
+           <div className="empty-state__subtext">No delayed, in-progress, or urgent tasks.</div>
         </div>
       ) : (
-        <>
-          <Section
-            title="IN PROGRESS"
-            titleClass="task-section__title--progress"
-            badgeClass="count-badge--emerald"
-            items={inProgress}
-          />
-          <Section
-            title="AVAILABLE TO START"
-            titleClass="task-section__title--overdue"
-            badgeClass="count-badge--coral"
-            items={toDo}
-          />
-          <Section
-            title="UNSCHEDULED TASKS"
-            titleClass="task-section__title--today"
-            badgeClass="count-badge--amber"
-            items={unscheduled}
-          />
-        </>
+        <div className="daily-task-container">
+          
+          {/* DELAYED SECTION */}
+          {delayed.length > 0 && (
+            <div className="task-section task-section--delayed fade-in-up" style={{ marginBottom: '2.5rem' }}>
+              <div className="task-section__header" style={{ borderBottom: '2px solid var(--accent-coral)', paddingBottom: '0.5rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+                <span className="task-section__title" style={{ color: 'var(--accent-coral)', fontWeight: '800', fontSize: '1.25rem', letterSpacing: '0.05em' }}>⚠️ DELAYED</span>
+                <span className="count-badge count-badge--coral">{delayed.length}</span>
+              </div>
+              <div className="task-list-rows" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {delayed.map(t => (
+                  <div key={t.id} className="task-row-item glass-panel-sm" onClick={() => handleRowClick(t)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', transition: 'background 0.2s', ':hover': { background: 'rgba(255,255,255,0.05)' } }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{t.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      {t.status === 'In Progress' && <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: 'rgba(59,130,246,0.15)', color: 'var(--accent-blue)', borderRadius: '4px' }}>In Progress</span>}
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                        {t.targetDateFinish ? `Due ${formatDate(t.targetDateFinish)}` : 'No Due Date'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* STANDARD SECTIONS */}
+          {sections.map(sec => (
+            <div key={sec.name} className="task-section fade-in-up" style={{ marginBottom: '2.5rem' }}>
+              <div className="task-section__header" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+                <span className="task-section__title" style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: '700' }}>{sec.name}</span>
+                <span className="count-badge" style={{ background: 'rgba(255,255,255,0.1)' }}>{sec.items.length}</span>
+              </div>
+              <div className="task-list-rows" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {sec.items.map(t => (
+                  <div key={t.id} className="task-row-item glass-panel-sm" onClick={() => handleRowClick(t)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', transition: 'background 0.2s' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      {t._isUrgent && <span style={{ color: 'var(--accent-coral)', fontSize: '1.1rem' }} title="Due within 5 days">⭐️</span>}
+                      {t.status === 'In Progress' && <span style={{ color: 'var(--accent-blue)', fontSize: '1.1rem' }} title="In Progress">▶</span>}
+                      <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{t.name}</span>
+                    </div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      {t.targetDateFinish ? `Due ${formatDate(t.targetDateFinish)}` : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {editingTask && (
+        <TaskEditModal
+          task={editingTask}
+          allTasks={tasks}
+          onSave={handleSaveEdit}
+          onClose={() => setEditingTask(null)}
+          onShowMaintenancePrompt={onShowMaintenancePrompt}
+        />
       )}
     </div>
   );

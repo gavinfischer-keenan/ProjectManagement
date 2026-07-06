@@ -2252,3 +2252,11 @@ progress::-moz-progress-bar {
   color: var(--text-muted);
   white-space: nowrap;
 }
+
+.task-row-item {
+  transition: background 0.2s;
+}
+
+.task-row-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
