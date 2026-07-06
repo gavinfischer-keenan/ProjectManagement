@@ -358,8 +358,7 @@ export default function TaskTable({
             ))}
           </tbody>
         </table>
-        </div> {/* end task-table-container */}
-      </div> {/* end tracker-layout wrapper */}
+        </div>
 
       {/* Create Task/Section Modal */}
       {createModal && (
