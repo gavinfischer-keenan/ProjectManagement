@@ -3,3 +3,5 @@ dist/
 server/uploads/
 *.log
 .DS_Store
+*.zip
+fixData.js

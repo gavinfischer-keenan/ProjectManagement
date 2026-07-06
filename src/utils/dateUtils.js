@@ -141,3 +141,17 @@ export function durationDays(task) {
   return task.duration ?? null;
 }
 
+/**
+ * Add days to an ISO date string and return a new ISO date string.
+ */
+export function addDaysToISO(isoStr, days) {
+  if (!isoStr) return '';
+  const [y, m, d] = isoStr.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + days);
+  const yOut = date.getUTCFullYear();
+  const mOut = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dOut = String(date.getUTCDate()).padStart(2, '0');
+  return `${yOut}-${mOut}-${dOut}`;
+}
+

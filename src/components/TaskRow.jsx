@@ -7,7 +7,6 @@ import { getRowClass, getDateCellClass } from '../utils/colorUtils.js';
 import { formatDate } from '../utils/dateUtils.js';
 import { calculateRollup, canStartTask } from '../utils/treeUtils.js';
 import PercentCell from './PercentCell.jsx';
-import GanttBar from './GanttBar.jsx';
 
 export default function TaskRow({
   task,
@@ -67,21 +66,23 @@ export default function TaskRow({
   /* ── Derived data ───────────────────────────────────────── */
   const baseRowClass = getRowClass(task);
   const isSection    = task.taskType === 'section';
-  // Show as group header if: is a section (even empty) OR is a task with children
-  const isGroupHeader = isSection || hasChildren;
+  // We still calculate rollups for tasks with children, but they no longer look like sections.
+  const needsRollup = isSection || hasChildren;
+  
   const rowClass = [
     baseRowClass,
-    isGroupHeader ? 'row-group-header' : '',
-    isSection     ? 'row-section-type'  : '',
+    isSection ? 'row-group-header row-section-type' : '',
   ].join(' ').trim();
   const startCellClass  = getDateCellClass(task.dateStarted, task.targetDateStart);
   const finishCellClass = getDateCellClass(task.dateFinished, task.targetDateFinish);
   const { canStart, blockedBy } = canStartTask(task, allTasks);
 
-  // Rollup for group-header rows
-  const rollup = isGroupHeader ? calculateRollup(task, allTasks) : null;
+  // Rollup for parent tasks and sections
+  const rollup = needsRollup ? calculateRollup(task, allTasks) : null;
   const displayPercent = rollup ? rollup.percentComplete : (task.percentComplete || 0);
   const displayStatus  = rollup ? rollup.status : (task.status || 'Not Started');
+  
+  const totalDepth = depth + (task.depDepth || 0);
 
   /* ── Drag state classes ─────────────────────────────────── */
   const isDragging = dragState.dragId === String(task.id);
@@ -143,10 +144,10 @@ export default function TaskRow({
         </div>
       </td>
 
-      {/* Task Name and Details — full-span for sections and parent tasks */}
-      {isGroupHeader ? (
+      {/* Task Name and Details — full-span for sections ONLY */}
+      {isSection ? (
         <td colSpan={7}>
-          <div className={`indent-${Math.min(depth, 5)}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div className={`indent-${Math.min(totalDepth, 5)}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             {editingName ? (
               <input
                 ref={inputRef}
@@ -165,6 +166,9 @@ export default function TaskRow({
                 {task.name || 'Untitled'}
               </span>
             )}
+            {!canStart && (
+              <span className="blocked-icon" title={`Blocked by: ${blockedBy}`}>🔒</span>
+            )}
             {isSection && (
               <span className="section-badge" title="Section — groups tasks below it">§ SECTION</span>
             )}
@@ -176,13 +180,23 @@ export default function TaskRow({
             {isSection && rollup && rollup.totalChildren === 0 && (
               <span className="section-empty-hint">drag tasks here or use indent ▶</span>
             )}
+            {isSection && (
+              <button 
+                className="btn-add-subtask-inline"
+                onClick={() => onAddSubtask(task.id)}
+                title="Add task in this section"
+              >
+                ⊞ Add Subtask
+              </button>
+            )}
           </div>
         </td>
       ) : (
         <>
           {/* Task Name */}
           <td>
-            <div className={`indent-${Math.min(depth, 5)}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className={`indent-${Math.min(totalDepth, 5)}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {task.dependsOnTaskId && <span style={{ color: 'var(--text-muted)', fontSize: '1.2em' }}>↳</span>}
               {editingName ? (
                 <input
                   ref={inputRef}

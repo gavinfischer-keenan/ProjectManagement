@@ -1,6 +1,6 @@
 /* GanttTimeline — Scrollable Gantt Chart — Hawaii Project Manager */
 import React, { useMemo, useRef } from 'react';
-import { buildTree, flattenTree } from '../utils/treeUtils.js';
+import { buildTree, flattenTree, applyDependencyDepths } from '../utils/treeUtils.js';
 import { isoToDate } from '../utils/dateUtils.js';
 
 const ROW_HEIGHT = 28;
@@ -13,16 +13,18 @@ function addDays(date, days) {
   return d;
 }
 
-export default function GanttTimeline({ tasks, onClose }) {
+export default function GanttTimeline({ tasks, onClose, onFocusTask, fullPage = false }) {
   const containerRef = useRef(null);
 
   const flatList = useMemo(() => {
-    const tree = buildTree(tasks);
-    return flattenTree(tree);
+    // 1. Calculate depths
+    // 2. Build Tree (which now sorts by depth then order)
+    // 3. Flatten
+    return flattenTree(buildTree(applyDependencyDepths(tasks)));
   }, [tasks]);
 
   const plottable = useMemo(
-    () => flatList.filter((t) => t.targetDateStart || t.targetDateFinish),
+    () => flatList.filter((t) => t.targetDateStart || t.targetDateFinish || t.dateStarted || t.dateFinished),
     [flatList]
   );
 
@@ -31,12 +33,11 @@ export default function GanttTimeline({ tasks, onClose }) {
     let min = null;
     let max = null;
     for (const t of plottable) {
-      if (t.targetDateStart) {
-        const d = isoToDate(t.targetDateStart);
+      const dates = [t.targetDateStart, t.targetDateFinish, t.dateStarted, t.dateFinished]
+        .filter(Boolean)
+        .map(isoToDate);
+      for (const d of dates) {
         if (!min || d < min) min = d;
-      }
-      if (t.targetDateFinish) {
-        const d = isoToDate(t.targetDateFinish);
         if (!max || d > max) max = d;
       }
     }
@@ -69,11 +70,29 @@ export default function GanttTimeline({ tasks, onClose }) {
   while (cursor.getTime() <= minDate.getTime() + totalDays * 86400000) {
     const x = Math.round((cursor - minDate) / 86400000) * DAY_WIDTH;
     months.push({
-      label: cursor.toLocaleString('default', { month: 'short', year: '2-digit', timeZone: 'UTC' }),
+      label: cursor.toLocaleString('default', { month: 'short', year: 'numeric', timeZone: 'UTC' }),
       x,
     });
     cursor = new Date(cursor);
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+
+  // Build week markers (Mondays)
+  const weeks = [];
+  let wCursor = new Date(minDate);
+  while (wCursor.getUTCDay() !== 1) { // 1 = Monday
+    wCursor.setUTCDate(wCursor.getUTCDate() - 1);
+  }
+  while (wCursor.getTime() <= minDate.getTime() + totalDays * 86400000) {
+    const x = Math.round((wCursor - minDate) / 86400000) * DAY_WIDTH;
+    if (x >= 0) {
+      weeks.push({
+        label: wCursor.toLocaleString('default', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+        x,
+      });
+    }
+    wCursor = new Date(wCursor);
+    wCursor.setUTCDate(wCursor.getUTCDate() + 7);
   }
 
   const now = new Date();
@@ -85,19 +104,27 @@ export default function GanttTimeline({ tasks, onClose }) {
     <div className="gantt-timeline-panel">
       <div className="gantt-timeline-header">
         <span className="gantt-timeline-title">📅 Gantt Timeline</span>
+        <div className="gantt-legend" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginLeft: 'auto', marginRight: '1rem', fontSize: '0.75rem', alignItems: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}><span style={{ display: 'inline-block', width: 12, minWidth: 12, height: 12, background: 'rgba(16,185,129,0.85)', borderRadius: 2 }} /> Completed</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}><span style={{ display: 'inline-block', width: 12, minWidth: 12, height: 12, background: 'rgba(59,130,246,0.75)', borderRadius: 2 }} /> In Progress</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}><span style={{ display: 'inline-block', width: 12, minWidth: 12, height: 12, background: 'rgba(239,68,68,0.75)', borderRadius: 2 }} /> Late</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}><span style={{ display: 'inline-block', width: 12, minWidth: 12, height: 12, background: 'rgba(100,116,139,0.55)', borderRadius: 2 }} /> Planned</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}><span style={{ display: 'inline-block', width: 12, minWidth: 12, height: 12, background: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 2px, transparent 2px, transparent 6px)', borderRadius: 2, border: '1px solid rgba(255,255,255,0.1)' }} /> Scheduled</div>
+        </div>
         {onClose && (
           <button className="gantt-close-btn" onClick={onClose} title="Hide Timeline">✕</button>
         )}
       </div>
-      <div className="gantt-timeline-body" ref={containerRef}>
+      <div className="gantt-timeline-body" ref={containerRef} style={{ display: 'flex', overflow: 'auto', flex: 1, position: 'relative' }}>
         {/* Sticky label column */}
-        <div className="gantt-labels" style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH }}>
-          <div className="gantt-label-header" style={{ height: ROW_HEIGHT }} />
+        <div className="gantt-labels" style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH, position: 'sticky', left: 0, zIndex: 20, backgroundColor: 'var(--bg-panel)', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
+          <div className="gantt-label-header" style={{ height: ROW_HEIGHT, position: 'sticky', top: 0, zIndex: 30, backgroundColor: 'var(--bg-panel)', borderBottom: '1px solid rgba(255,255,255,0.1)' }} />
           {plottable.map((t) => (
             <div
               key={t.id}
               className="gantt-label-row"
-              style={{ height: ROW_HEIGHT, paddingLeft: 8 + (t.depth || 0) * 12 }}
+              style={{ height: ROW_HEIGHT, paddingLeft: 8 + (t.depth || 0) * 12, cursor: onFocusTask ? 'pointer' : 'default' }}
+              onClick={() => onFocusTask && onFocusTask(t.id)}
             >
               <span
                 className={
@@ -112,92 +139,128 @@ export default function GanttTimeline({ tasks, onClose }) {
           ))}
         </div>
 
-        {/* Scrollable SVG chart */}
-        <div className="gantt-chart-scroll">
-          <svg
-            width={chartWidth}
-            height={chartHeight + ROW_HEIGHT}
-            style={{ display: 'block' }}
-          >
-            {/* Month grid + labels */}
-            {months.map((m, i) => (
-              <g key={i}>
-                <line
-                  x1={m.x} y1={0} x2={m.x} y2={chartHeight + ROW_HEIGHT}
-                  stroke="rgba(255,255,255,0.08)" strokeWidth={1}
-                />
-                <text
-                  x={m.x + 4} y={ROW_HEIGHT - 6}
-                  fill="rgba(255,255,255,0.45)" fontSize={10} fontFamily="Inter,sans-serif"
-                >
+        {/* Scrollable SVG chart wrapper */}
+        <div className="gantt-chart-scroll" style={{ minWidth: chartWidth, flex: 1 }}>
+          {/* STICKY HEADER SVG (Dates and Labels) */}
+          <div className="gantt-chart-header" style={{ position: 'sticky', top: 0, zIndex: 10, height: ROW_HEIGHT, backgroundColor: 'var(--bg-panel)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <svg width={chartWidth} height={ROW_HEIGHT} style={{ display: 'block' }}>
+              {weeks.map((w, i) => (
+                <text key={`w-${i}`} x={w.x + 4} y={ROW_HEIGHT - 6} fill="rgba(255,255,255,0.25)" fontSize={8} fontFamily="Inter,sans-serif">
+                  {w.label}
+                </text>
+              ))}
+              {months.map((m, i) => (
+                <text key={`m-${i}`} x={m.x + 4} y={ROW_HEIGHT - 16} fill="rgba(255,255,255,0.6)" fontSize={10} fontFamily="Inter,sans-serif" fontWeight={600}>
                   {m.label}
                 </text>
-              </g>
-            ))}
-
-            {/* Today line */}
-            {todayX >= 0 && todayX <= chartWidth && (
-              <g>
-                <line
-                  x1={todayX} y1={0} x2={todayX} y2={chartHeight + ROW_HEIGHT}
-                  stroke="rgba(245,158,11,0.7)" strokeWidth={1.5} strokeDasharray="4 3"
-                />
-                <text
-                  x={todayX + 3} y={ROW_HEIGHT - 6}
-                  fill="rgba(245,158,11,0.9)" fontSize={9} fontFamily="Inter,sans-serif"
-                >
+              ))}
+              {todayX >= 0 && todayX <= chartWidth && (
+                <text x={todayX + 3} y={ROW_HEIGHT - 6} fill="rgba(245,158,11,0.9)" fontSize={9} fontFamily="Inter,sans-serif">
                   Today
                 </text>
-              </g>
-            )}
+              )}
+            </svg>
+          </div>
+
+          {/* MAIN BODY SVG (Bars and Grid Lines) */}
+          <div className="gantt-chart-body">
+            <svg width={chartWidth} height={chartHeight} style={{ display: 'block' }}>
+              <defs>
+                <pattern id="ghost-hatch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                  <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,0.25)" strokeWidth="2" />
+                </pattern>
+              </defs>
+
+              {/* Week grids */}
+              {weeks.map((w, i) => (
+                <line key={`wg-${i}`} x1={w.x} y1={0} x2={w.x} y2={chartHeight} stroke="rgba(255,255,255,0.15)" strokeWidth={1} strokeDasharray="4 4" />
+              ))}
+              
+              {/* Month grids */}
+              {months.map((m, i) => (
+                <line key={`mg-${i}`} x1={m.x} y1={0} x2={m.x} y2={chartHeight} stroke="rgba(255,255,255,0.3)" strokeWidth={1.5} />
+              ))}
+
+              {/* Today line */}
+              {todayX >= 0 && todayX <= chartWidth && (
+                <line x1={todayX} y1={0} x2={todayX} y2={chartHeight} stroke="rgba(245,158,11,0.7)" strokeWidth={1.5} strokeDasharray="4 3" />
+              )}
 
             {/* Task bars */}
             {plottable.map((t, i) => {
-              const y = ROW_HEIGHT + i * ROW_HEIGHT;
-              const startDate = t.targetDateStart ? isoToDate(t.targetDateStart) : null;
-              const finishDate = t.targetDateFinish ? isoToDate(t.targetDateFinish) : null;
+              const y = i * ROW_HEIGHT;
+              const plannedStart = t.targetDateStart ? isoToDate(t.targetDateStart) : null;
+              const plannedFinish = t.targetDateFinish ? isoToDate(t.targetDateFinish) : null;
+              const actualStart = t.dateStarted ? isoToDate(t.dateStarted) : null;
+              const actualFinish = t.dateFinished ? isoToDate(t.dateFinished) : null;
 
-              let barX = 0;
-              let barWidth = 0;
-              if (startDate && finishDate) {
-                barX = Math.round((startDate - minDate) / 86400000) * DAY_WIDTH;
-                barWidth = Math.max(4, Math.round((finishDate - startDate) / 86400000) * DAY_WIDTH);
-              } else if (startDate) {
-                barX = Math.round((startDate - minDate) / 86400000) * DAY_WIDTH;
-                barWidth = DAY_WIDTH * 3;
-              } else if (finishDate) {
-                barX = Math.round((finishDate - minDate) / 86400000) * DAY_WIDTH - DAY_WIDTH * 3;
-                barWidth = DAY_WIDTH * 3;
+              const getRect = (start, finish) => {
+                let bx = 0; let bw = 0;
+                if (start && finish) {
+                  bx = Math.round((start - minDate) / 86400000) * DAY_WIDTH;
+                  bw = Math.max(4, Math.round((finish - start) / 86400000) * DAY_WIDTH);
+                } else if (start) {
+                  bx = Math.round((start - minDate) / 86400000) * DAY_WIDTH;
+                  bw = DAY_WIDTH * 3;
+                } else if (finish) {
+                  bx = Math.round((finish - minDate) / 86400000) * DAY_WIDTH - DAY_WIDTH * 3;
+                  bw = DAY_WIDTH * 3;
+                }
+                return { x: bx, width: bw };
+              };
+
+              const plannedRect = getRect(plannedStart, plannedFinish);
+
+              const solidStart = actualStart || plannedStart;
+              let solidFinish = actualFinish;
+              if (!solidFinish && actualStart && t.status !== 'Completed') {
+                const todayD = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+                const fallbackEnd = plannedFinish || todayD;
+                solidFinish = new Date(Math.max(todayD.getTime(), fallbackEnd.getTime()));
               }
+              if (!solidFinish) solidFinish = plannedFinish;
 
+              const actualRect = getRect(solidStart, solidFinish);
+              
               const pct = Math.max(0, Math.min(100, t.percentComplete || 0));
-              const progressWidth = Math.round(barWidth * pct / 100);
+              const progressWidth = Math.round(actualRect.width * pct / 100);
               const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-              const isLate = finishDate && finishDate.getTime() < todayUTC && !t.dateFinished;
+              const isLate = plannedFinish && plannedFinish.getTime() < todayUTC && !t.dateFinished;
 
               let barColor = 'rgba(100,116,139,0.55)';
               if (t.status === 'Completed') barColor = 'rgba(16,185,129,0.85)';
               else if (isLate) barColor = 'rgba(239,68,68,0.75)';
               else if (t.status === 'In Progress') barColor = 'rgba(59,130,246,0.75)';
 
+              const hasActual = !!t.dateStarted;
+
               return (
                 <g key={t.id}>
                   {i % 2 === 1 && (
                     <rect x={0} y={y} width={chartWidth} height={ROW_HEIGHT} fill="rgba(255,255,255,0.02)" />
                   )}
-                  {barWidth > 0 && (
+                  
+                  {hasActual && plannedRect.width > 0 && (
                     <>
-                      <rect x={barX} y={y + 5} width={barWidth} height={ROW_HEIGHT - 10} rx={3} fill="rgba(255,255,255,0.06)" />
-                      <rect x={barX} y={y + 5} width={barWidth} height={ROW_HEIGHT - 10} rx={3} fill={barColor} />
+                      <rect x={plannedRect.x} y={y + 5} width={plannedRect.width} height={ROW_HEIGHT - 10} rx={3} fill={barColor} fillOpacity={0.2} />
+                      <rect x={plannedRect.x} y={y + 5} width={plannedRect.width} height={ROW_HEIGHT - 10} rx={3} fill="url(#ghost-hatch)" />
+                    </>
+                  )}
+
+                  {actualRect.width > 0 && (
+                    <>
+                      {!hasActual && <rect x={actualRect.x} y={y + 5} width={actualRect.width} height={ROW_HEIGHT - 10} rx={3} fill="rgba(255,255,255,0.06)" />}
+                      <rect x={actualRect.x} y={y + 5} width={actualRect.width} height={ROW_HEIGHT - 10} rx={3} fill={barColor} />
                       {pct > 0 && pct < 100 && (
-                        <rect x={barX} y={y + 5} width={progressWidth} height={ROW_HEIGHT - 10} rx={3} fill="rgba(16,185,129,0.9)" />
+                        <rect x={actualRect.x} y={y + 5} width={progressWidth} height={ROW_HEIGHT - 10} rx={3} fill="rgba(16,185,129,0.9)" />
                       )}
                     </>
                   )}
                 </g>
               );
             })}
-          </svg>
+            </svg>
+          </div>
         </div>
       </div>
     </div>

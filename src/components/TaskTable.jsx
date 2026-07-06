@@ -3,12 +3,11 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { buildTree, flattenTree } from '../utils/treeUtils.js';
+import { buildTree, flattenTree, applyDependencyDepths } from '../utils/treeUtils.js';
 import TaskRow from './TaskRow.jsx';
 import TaskEditModal from './TaskEditModal.jsx';
 import CreateTaskModal from './CreateTaskModal.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
-import GanttTimeline from './GanttTimeline.jsx';
 
 export default function TaskTable({
   tasks,
@@ -16,6 +15,11 @@ export default function TaskTable({
   onTaskDelete,
   onTaskCreate,
   onShowMaintenancePrompt,
+  onTasksRefresh,
+  onMilestoneComplete,
+  focusedSectionId,
+  focusedTaskId,
+  onClearFocus,
 }) {
   /* ── State ──────────────────────────────────────────────── */
   const [expandedIds, setExpandedIds] = useState(() => {
@@ -29,11 +33,10 @@ export default function TaskTable({
   const [editingTask, setEditingTask] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [dragState, setDragState] = useState({ dragId: null, overId: null });
-  const [showGantt, setShowGantt] = useState(false);
   const [createModal, setCreateModal] = useState(null); // { defaultType, defaultParentId } | null
 
   /* ── Tree ───────────────────────────────────────────────── */
-  const tree = useMemo(() => buildTree(tasks), [tasks]);
+  const tree = useMemo(() => buildTree(applyDependencyDepths(tasks)), [tasks]);
   const flatList = useMemo(() => flattenTree(tree), [tree]);
 
   // Initialize expanded IDs when tasks change (add any new parent IDs)
@@ -65,6 +68,38 @@ export default function TaskTable({
     });
   }, [flatList, expandedIds]);
 
+  /* ── Routing / Focus Effect ─────────────────────────────── */
+  React.useEffect(() => {
+    if (focusedTaskId || focusedSectionId) {
+      let targetId = focusedTaskId || focusedSectionId;
+      
+      // Auto-expand parents so the target row is visible
+      const expandAncestors = (taskId) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (task && task.parentId) {
+          setExpandedIds(prev => new Set(prev).add(task.parentId));
+          expandAncestors(task.parentId);
+        }
+      };
+      expandAncestors(targetId);
+
+      // Give React a tick to render the expanded rows
+      setTimeout(() => {
+        const rowElement = document.getElementById(`task-row-${targetId}`);
+        if (rowElement) {
+          rowElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        if (focusedTaskId) {
+          const taskObj = tasks.find(t => t.id === focusedTaskId);
+          if (taskObj) setEditingTask(taskObj);
+        }
+        
+        if (onClearFocus) onClearFocus();
+      }, 100);
+    }
+  }, [focusedTaskId, focusedSectionId, tasks, onClearFocus]);
+
   /* ── Handlers ───────────────────────────────────────────── */
   const handleToggleExpand = useCallback((id) => {
     setExpandedIds((prev) => {
@@ -84,12 +119,73 @@ export default function TaskTable({
 
   const handleEditSave = useCallback(
     async (updatedData) => {
-      if (editingTask) {
-        await onTaskUpdate(editingTask.id, updatedData);
-        setEditingTask(null);
+      if (!editingTask) return;
+
+      let needsRefresh = false;
+
+      // If dependency changed and is not null
+      if (
+        updatedData.dependsOnTaskId &&
+        updatedData.dependsOnTaskId !== editingTask.dependsOnTaskId
+      ) {
+        const predecessor = tasks.find((t) => t.id === updatedData.dependsOnTaskId);
+        const currentTask = tasks.find((t) => t.id === editingTask.id);
+        
+        if (predecessor && currentTask) {
+          const insertAt = (predecessor.order ?? 0) + 1;
+          const newParentId = predecessor.parentId || null;
+          
+          const isCorrectlyPositioned = 
+            currentTask.parentId === newParentId && 
+            (currentTask.order ?? 0) === insertAt;
+
+          if (!isCorrectlyPositioned) {
+            updatedData.parentId = newParentId;
+            updatedData.order = insertAt;
+            needsRefresh = true;
+            
+            // Shift siblings down
+            const siblings = tasks.filter(
+              (t) => t.parentId === newParentId && t.id !== editingTask.id
+            );
+            const toShift = siblings.filter((t) => (t.order ?? 0) >= insertAt);
+            
+            if (toShift.length > 0) {
+              const orderings = toShift.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
+              try {
+                await fetch('/api/tasks/reorder', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ orderings }),
+                });
+              } catch (err) {
+                console.error('Failed to shift task orders:', err);
+              }
+            }
+          }
+        }
       }
+
+      await onTaskUpdate(editingTask.id, updatedData);
+
+      // If this is a milestone task just marked Completed, log it
+      if (
+        updatedData.isMilestone &&
+        updatedData.status === 'Completed' &&
+        editingTask.status !== 'Completed' &&
+        onMilestoneComplete
+      ) {
+        const milestoneText = updatedData.milestoneText || editingTask.milestoneText || editingTask.name;
+        await onMilestoneComplete(editingTask, milestoneText, tasks);
+      }
+
+      if (onTasksRefresh) {
+        await onTasksRefresh();
+      }
+
+      setEditingTask(null);
     },
-    [editingTask, onTaskUpdate]
+    [editingTask, onTaskUpdate, tasks, onTasksRefresh, onMilestoneComplete]
   );
 
   /**
@@ -135,9 +231,12 @@ export default function TaskTable({
         targetDateFinish: prereqFinish || editingTask.targetDateStart || null,
       };
       const created = await onTaskCreate(newTask);
+      if (onTasksRefresh) {
+        await onTasksRefresh();
+      }
       return created;
     },
-    [editingTask, tasks, onTaskCreate]
+    [editingTask, tasks, onTaskCreate, onTasksRefresh]
   );
 
   const handleDeleteRequest = useCallback(
@@ -168,23 +267,33 @@ export default function TaskTable({
   }, []);
 
   const handleCreateSave = useCallback(async (payload) => {
-    const order = tasks.filter((t) => !t.parentId).length;
-    await onTaskCreate({ order, ...payload });
+    // 1. Shift existing siblings down by 1 to make room at order 0
+    const parentId = payload.parentId || null;
+    const siblings = tasks.filter((t) => t.parentId === parentId);
+    if (siblings.length > 0) {
+      const orderings = siblings.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
+      try {
+        await fetch('/api/tasks/reorder', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderings }),
+        });
+      } catch (err) {
+        console.error('Failed to shift task orders for new task:', err);
+      }
+    }
+
+    // 2. Create the new task at order 0
+    await onTaskCreate({ order: 0, ...payload });
     setCreateModal(null);
   }, [tasks, onTaskCreate]);
 
   const handleAddSubtask = useCallback(
     (parentId) => {
-      const newTask = {
-        name: 'New Sub-task',
-        parentId,
-        order: tasks.filter((t) => t.parentId === parentId).length,
-        status: 'Not Started',
-        percentComplete: 0,
-      };
-      onTaskCreate(newTask);
+      // Open the creation modal pre-filled with this section as the parent
+      setCreateModal({ defaultType: 'task', defaultParentId: parentId });
     },
-    [tasks, onTaskCreate]
+    []
   );
 
   /* ── Drag & Drop ────────────────────────────────────────── */
@@ -214,15 +323,50 @@ export default function TaskTable({
       const targetTask = tasks.find((t) => t.id === targetId);
       if (!sourceTask || !targetTask) return;
 
-      // If dropping onto a SECTION: nest without dependency
-      // If dropping onto a TASK: nest AND create dependency (old behaviour)
       const isTargetSection = targetTask.taskType === 'section';
-      const updates = { parentId: targetTask.id };
-      if (!isTargetSection) updates.dependsOnTaskId = targetTask.id;
+      const newParentId = isTargetSection ? targetTask.id : targetTask.parentId;
+      const insertAt = isTargetSection ? 0 : (targetTask.order ?? 0) + 1;
+
+      // Shift siblings down
+      const siblings = tasks.filter(
+        (t) => t.parentId === newParentId && t.id !== sourceTask.id
+      );
+      const toShift = siblings.filter((t) => (t.order ?? 0) >= insertAt);
+      
+      if (toShift.length > 0) {
+        const orderings = toShift.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
+        try {
+          await fetch('/api/tasks/reorder', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderings }),
+          });
+        } catch (err) {
+          console.error('Failed to shift task orders during drag-drop:', err);
+        }
+      }
+
+      const updates = {
+        parentId: newParentId,
+        order: insertAt
+      };
+      if (isTargetSection) {
+        updates.dependsOnTaskId = null;
+        updates.dependency = '';
+      } else {
+        updates.dependsOnTaskId = targetTask.id;
+        updates.dependency = targetTask.name;
+        if (targetTask.targetDateFinish) {
+          updates.targetDateStart = targetTask.targetDateFinish;
+        }
+      }
 
       await onTaskUpdate(sourceTask.id, updates);
+      if (onTasksRefresh) {
+        await onTasksRefresh();
+      }
     },
-    [tasks, onTaskUpdate]
+    [tasks, onTaskUpdate, onTasksRefresh]
   );
 
   const handleDragEnd = useCallback(() => {
@@ -239,10 +383,14 @@ export default function TaskTable({
       if (task.parentId === taskAbove.id) return;
 
       const isAboveSection = taskAbove.taskType === 'section';
-      const updates = { parentId: taskAbove.id };
+      const updates = {};
 
-      if (!isAboveSection) {
-        // Task-on-task indent: create dependency
+      if (isAboveSection) {
+        // Section indent: become a child of the section
+        updates.parentId = taskAbove.id;
+      } else {
+        // Task-on-task indent: create dependency, but remain a sibling
+        updates.parentId = taskAbove.parentId;
         updates.dependsOnTaskId = taskAbove.id;
         updates.dependency = taskAbove.name;
         if (taskAbove.targetDateFinish) {
@@ -295,25 +443,17 @@ export default function TaskTable({
     <div>
       <div className="table-toolbar">
         <h2 className="table-title">Project Tasks</h2>
-        <div className="table-toolbar-actions">
-          <button
-            className={`btn btn-sm ${showGantt ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setShowGantt((v) => !v)}
-            title={showGantt ? 'Hide Gantt Timeline' : 'Show Gantt Timeline'}
-          >
-            📅 Timeline
-          </button>
-          <button className="btn btn-secondary btn-sm" onClick={handleAddSection} title="Add a new section header">
+        <div className="toolbar-primary-actions">
+          <button className="btn btn-secondary btn-md" onClick={handleAddSection} title="Add a new section header">
             § Add Section
           </button>
-          <button className="btn btn-primary btn-sm" onClick={handleAddTask}>
+          <button className="btn btn-primary btn-md" onClick={handleAddTask}>
             + Add Task
           </button>
         </div>
       </div>
 
-      <div className={`tracker-layout ${showGantt ? 'gantt-open' : ''}`}>
-        <div className="task-table-container">
+      <div className="task-table-container">
         <table className="task-table">
           <thead>
             <tr>
@@ -334,6 +474,7 @@ export default function TaskTable({
             {visibleRows.map((row, idx) => (
               <TaskRow
                 key={row.id}
+                id={`task-row-${row.id}`}
                 task={row}
                 depth={row.depth}
                 isExpanded={expandedIds.has(row.id)}
@@ -358,15 +499,7 @@ export default function TaskTable({
             ))}
           </tbody>
         </table>
-        </div> {/* end task-table-container */}
-
-      {/* Gantt Side Panel */}
-      {showGantt && (
-        <div className="gantt-side-panel">
-          <GanttTimeline tasks={tasks} onClose={() => setShowGantt(false)} />
         </div>
-      )}
-      </div>  {/* end tracker-layout */}
 
       {/* Create Task/Section Modal */}
       {createModal && (

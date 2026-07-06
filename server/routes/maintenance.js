@@ -64,6 +64,11 @@ router.post('/', (req, res) => {
       newInstallation: req.body.newInstallation ?? false,
       newInstallationDate: req.body.newInstallationDate ?? null,
       notes: req.body.notes ?? '',
+      // Milestone fields
+      isMilestone: req.body.isMilestone ?? false,
+      milestoneText: req.body.milestoneText ?? '',
+      sectionId: req.body.sectionId ?? null,
+      sectionName: req.body.sectionName ?? '',
     };
 
     entries.push(newEntry);
@@ -92,6 +97,7 @@ router.put('/:id', (req, res) => {
     const updatable = [
       'description', 'taskId', 'dateOfRepair', 'dateWhenFixed',
       'newInstallation', 'newInstallationDate', 'notes',
+      'isMilestone', 'milestoneText', 'sectionId', 'sectionName',
     ];
 
     for (const field of updatable) {

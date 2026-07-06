@@ -3,7 +3,8 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { canStartTask } from '../utils/treeUtils.js';
+import { canStartTask, calculateRollup } from '../utils/treeUtils.js';
+import { daysBetween, addDaysToISO } from '../utils/dateUtils.js';
 
 export default function TaskEditModal({
   task,
@@ -13,6 +14,9 @@ export default function TaskEditModal({
   onShowMaintenancePrompt,
   onCreatePrerequisite, // async (name, targetFinish) => createdTask
 }) {
+  const isParent = allTasks.some(t => t.parentId === task.id);
+  const rollup = isParent ? calculateRollup(task, allTasks) : null;
+
   /* ── Form State ─────────────────────────────────────────── */
   const [form, setForm] = useState({
     name:             task.name || '',
@@ -27,6 +31,10 @@ export default function TaskEditModal({
     status:           task.status || 'Not Started',
     delayed:          task.delayed || false,
     percentComplete:  task.percentComplete ?? 0,
+    isMilestone:      task.isMilestone || false,
+    milestoneText:    task.milestoneText || '',
+    isHardware:       task.isHardware || false,
+    hardwareText:     task.hardwareText || '',
   });
 
   const prevDateFinished = useRef(task.dateFinished || '');
@@ -39,6 +47,9 @@ export default function TaskEditModal({
   const [prereqSaving, setPrereqSaving]       = useState(false);
   const [prereqError, setPrereqError]         = useState('');
   const prereqNameRef = useRef(null);
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState('general');
 
   useEffect(() => {
     if (showPrereqPanel && prereqNameRef.current) prereqNameRef.current.focus();
@@ -52,7 +63,45 @@ export default function TaskEditModal({
 
   /* ── Handlers ───────────────────────────────────────────── */
   const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      
+      if (field === 'targetDateStart') {
+        const start = value;
+        const finish = next.targetDateFinish;
+        const dur = next.duration;
+        
+        if (start && finish) {
+          next.duration = daysBetween(start, finish);
+        } else if (start && dur) {
+          next.targetDateFinish = addDaysToISO(start, Number(dur));
+        }
+      } else if (field === 'targetDateFinish') {
+        const start = next.targetDateStart;
+        const finish = value;
+        const dur = next.duration;
+        
+        if (start && finish) {
+          next.duration = daysBetween(start, finish);
+        } else if (finish && dur) {
+          next.targetDateStart = addDaysToISO(finish, -Number(dur));
+        }
+      } else if (field === 'duration') {
+        const start = next.targetDateStart;
+        const finish = next.targetDateFinish;
+        const dur = value !== '' ? Number(value) : null;
+        
+        if (dur !== null) {
+          if (start) {
+            next.targetDateFinish = addDaysToISO(start, dur);
+          } else if (finish) {
+            next.targetDateStart = addDaysToISO(finish, -dur);
+          }
+        }
+      }
+      
+      return next;
+    });
   };
 
   const handleDateFinishedChange = (value) => {
@@ -86,6 +135,8 @@ export default function TaskEditModal({
     } else if (value === 'In Progress') {
       if (!form.dateStarted) updates.dateStarted = todayStr();
       if (form.percentComplete === 100) updates.percentComplete = 50;
+      // Enforce 10% minimum for In Progress
+      if (form.percentComplete < 10) updates.percentComplete = 10;
     } else if (value === 'Not Started') {
       updates.percentComplete = 0;
     }
@@ -93,17 +144,33 @@ export default function TaskEditModal({
   };
 
   const handlePercentChange = (value) => {
-    const num = Number(value);
+    let num = Number(value);
+    
+    // Enforce 10% minimum if they try to drag below 10 while in progress (unless they drag to 0 to mark Not Started)
+    if (form.status === 'In Progress' && num < 10 && num > 0) {
+      num = 10;
+    }
+
     const updates = { percentComplete: num };
     if (num === 100) {
       updates.status = 'Completed';
       if (!form.dateFinished) updates.dateFinished = todayStr();
       if (!form.dateStarted) updates.dateStarted = form.targetDateStart || todayStr();
     } else if (num > 0) {
-      updates.status = 'In Progress';
-      if (!form.dateStarted) updates.dateStarted = todayStr();
-    } else {
+      if (form.status === 'Completed' || form.status === 'Not Started') {
+        updates.status = 'In Progress';
+        // Enforce 10% minimum when switching to In Progress via slider
+        if (num < 10) {
+          num = 10;
+          updates.percentComplete = 10;
+        }
+      }
+      if (!form.dateStarted) updates.dateStarted = form.targetDateStart || todayStr();
+      if (form.dateFinished) updates.dateFinished = '';
+    } else if (num === 0) {
       updates.status = 'Not Started';
+      updates.dateFinished = '';
+      updates.dateStarted = '';
     }
     setForm((prev) => ({ ...prev, ...updates }));
   };
@@ -165,8 +232,7 @@ export default function TaskEditModal({
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  /* ── Other tasks for dependency dropdown ────────────────── */
-  const otherTasks = allTasks.filter((t) => t.id !== task.id);
+  const otherTasks = allTasks.filter((t) => t.id !== task.id && t.parentId === task.parentId);
 
   return (
     <div className="modal-overlay" ref={overlayRef} onClick={handleOverlayClick}>
@@ -181,21 +247,127 @@ export default function TaskEditModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            {/* Task Name */}
-            <div className="form-group">
-              <label className="form-label">Task Name</label>
-              <input
-                className="form-input"
-                type="text"
-                value={form.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Enter task name"
-                required
-              />
-            </div>
+          {/* Tabs */}
+          <div className="create-modal-tabs" style={{ padding: '0 1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
+            <button type="button" className={`create-tab-btn ${activeTab === 'general' ? 'active' : ''}`} onClick={() => setActiveTab('general')}>📝 General</button>
+            <button type="button" className={`create-tab-btn ${activeTab === 'dependencies' ? 'active' : ''}`} onClick={() => setActiveTab('dependencies')}>⛓ Dependencies</button>
+            <button type="button" className={`create-tab-btn ${activeTab === 'log' ? 'active' : ''}`} onClick={() => setActiveTab('log')}>📋 Log & Hardware</button>
+          </div>
 
-            {/* Dependency Row */}
+          <div className="modal-body">
+            {activeTab === 'general' && (
+              <>
+                {/* Task Name */}
+                <div className="form-group">
+                  <label className="form-label">Task Name</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    placeholder="Enter task name"
+                    required
+                  />
+                </div>
+
+                {/* Date Row 1 */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Target Start</label>
+                    <input className="form-input" type="date" value={form.targetDateStart} onChange={(e) => handleChange('targetDateStart', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Target Finish</label>
+                    <input className="form-input" type="date" value={form.targetDateFinish} onChange={(e) => handleChange('targetDateFinish', e.target.value)} />
+                  </div>
+                </div>
+
+                {/* Date Row 2 */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Date Started</label>
+                    <input className="form-input" type="date" value={form.dateStarted} onChange={(e) => handleChange('dateStarted', e.target.value)} disabled={!blockInfo.canStart} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Date Finished</label>
+                    <input className="form-input" type="date" value={form.dateFinished} onChange={(e) => handleDateFinishedChange(e.target.value)} />
+                  </div>
+                </div>
+
+                {/* Duration & Status */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Duration (days)</label>
+                    <input className="form-input" type="number" min="0" value={form.duration} onChange={(e) => handleChange('duration', e.target.value)} placeholder="0" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Status</label>
+                    <select className="form-select" value={isParent ? rollup.status : form.status} onChange={(e) => handleStatusChange(e.target.value)} disabled={isParent}>
+                      <option value="Not Started">Not Started</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Blocked">Blocked</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Percent Complete */}
+                <div className="form-group">
+                  <label className="form-label">Percent Complete: {isParent ? rollup.percentComplete : form.percentComplete}%</label>
+                  {isParent ? (
+                    <><progress value={rollup.percentComplete} max="100" style={{ width: '100%', height: '12px' }} /><span className="form-help">Calculated automatically from sub-tasks.</span></>
+                  ) : (
+                    <input type="range" min="0" max="100" step="5" value={form.percentComplete} onChange={(e) => handlePercentChange(e.target.value)} />
+                  )}
+                </div>
+
+                {/* Delayed Checkbox */}
+                <div className="form-checkbox-group">
+                  <input className="form-checkbox" type="checkbox" id="delayed" checked={form.delayed} onChange={(e) => handleChange('delayed', e.target.checked)} />
+                  <label htmlFor="delayed" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal' }}>Mark as Delayed</label>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'log' && (
+              <>
+                {/* Milestone */}
+                <div className="form-checkbox-group" style={{ marginTop: '0.5rem' }}>
+                  <input className="form-checkbox" type="checkbox" id="isMilestone" checked={form.isMilestone} onChange={(e) => handleChange('isMilestone', e.target.checked)} />
+                  <label htmlFor="isMilestone" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal', color: 'var(--accent-gold, #f5c842)' }}>🏆 This task is a Project Milestone</label>
+                </div>
+                {form.isMilestone && (
+                  <div className="form-group fade-in-up" style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(245,200,66,0.08)', border: '1px solid rgba(245,200,66,0.3)', borderRadius: '8px' }}>
+                    <label className="form-label" style={{ color: 'var(--accent-gold, #f5c842)' }}>🏆 Milestone Achievement Text</label>
+                    <input className="form-input" type="text" value={form.milestoneText} onChange={(e) => handleChange('milestoneText', e.target.value)} placeholder='e.g. "AC Pads ready for Units"' />
+                    <span className="form-help">Automatically added to the Maintenance Log when completed.</span>
+                  </div>
+                )}
+
+                {/* Hardware */}
+                <div className="form-checkbox-group" style={{ marginTop: '1.5rem' }}>
+                  <input className="form-checkbox" type="checkbox" id="isHardware" checked={form.isHardware} onChange={(e) => handleChange('isHardware', e.target.checked)} />
+                  <label htmlFor="isHardware" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal', color: 'var(--accent-teal, #2dd4bf)' }}>🔧 New Hardware Installation</label>
+                </div>
+                {form.isHardware && (
+                  <div className="form-group fade-in-up" style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: '8px' }}>
+                    <label className="form-label" style={{ color: 'var(--accent-teal, #2dd4bf)' }}>🔧 Hardware Details (Model / Serial)</label>
+                    <input className="form-input" type="text" value={form.hardwareText} onChange={(e) => handleChange('hardwareText', e.target.value)} placeholder='e.g. "New Ceiling fan model xXXX"' />
+                    <span className="form-help">Automatically added to the Maintenance Log when completed.</span>
+                  </div>
+                )}
+
+                {/* Notes */}
+                <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                  <label className="form-label">Notes</label>
+                  <textarea className="form-textarea" value={form.notes} onChange={(e) => handleChange('notes', e.target.value)} placeholder="Free form notes for this task..." rows={6} />
+                </div>
+              </>
+            )}
+
+            {activeTab === 'dependencies' && (
+              <>
+
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Dependency Label</label>
@@ -320,119 +492,8 @@ export default function TaskEditModal({
               </div>
             )}
 
-            {/* Date Row 1 */}
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Target Start</label>
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.targetDateStart}
-                  onChange={(e) => handleChange('targetDateStart', e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Target Finish</label>
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.targetDateFinish}
-                  onChange={(e) => handleChange('targetDateFinish', e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Date Row 2 */}
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Date Started</label>
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.dateStarted}
-                  onChange={(e) => handleChange('dateStarted', e.target.value)}
-                  disabled={!blockInfo.canStart}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Date Finished</label>
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.dateFinished}
-                  onChange={(e) => handleDateFinishedChange(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Duration & Status */}
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Duration (days)</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  min="0"
-                  value={form.duration}
-                  onChange={(e) => handleChange('duration', e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Status</label>
-                <select
-                  className="form-select"
-                  value={form.status}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                >
-                  <option value="Not Started">Not Started</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Blocked">Blocked</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Percent Complete */}
-            <div className="form-group">
-              <label className="form-label">
-                Percent Complete: {form.percentComplete}%
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={form.percentComplete}
-                onChange={(e) => handlePercentChange(e.target.value)}
-              />
-            </div>
-
-            {/* Delayed Checkbox */}
-            <div className="form-checkbox-group">
-              <input
-                className="form-checkbox"
-                type="checkbox"
-                id="delayed"
-                checked={form.delayed}
-                onChange={(e) => handleChange('delayed', e.target.checked)}
-              />
-              <label htmlFor="delayed" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-                Mark as Delayed
-              </label>
-            </div>
-
-            {/* Notes */}
-            <div className="form-group">
-              <label className="form-label">Notes</label>
-              <textarea
-                className="form-textarea"
-                value={form.notes}
-                onChange={(e) => handleChange('notes', e.target.value)}
-                placeholder="Additional notes…"
-                rows={3}
-              />
-            </div>
+              </>
+            )}
           </div>
 
           {/* Footer */}

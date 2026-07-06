@@ -41,6 +41,24 @@ function cellVal(sheet, col, row) {
   return cell ? cell.v : undefined;
 }
 
+/**
+ * Check if a row has a MAX or MIN formula in any cell, marking it as a Section.
+ */
+function isRowSection(sheet, row) {
+  const cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+  for (const col of cols) {
+    const addr = `${col}${row + 1}`;
+    const cell = sheet[addr];
+    if (cell && typeof cell.f === 'string') {
+      const formula = cell.f.toUpperCase();
+      if (formula.includes('MAX(') || formula.includes('MIN(')) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // ---------------------------------------------------------------------------
 // POST /  — import an .xlsx file
 // ---------------------------------------------------------------------------
@@ -67,21 +85,8 @@ router.post('/', upload.single('file'), (req, res) => {
     const lastRow = range.e.r; // 0-indexed
 
     // -----------------------------------------------------------------
-    // Phase 1: Collect top-level summary names (rows 5–17, 0-indexed)
-    // These are the parent category labels that will appear again later.
-    // -----------------------------------------------------------------
-    const summaryNames = new Set();
-
-    for (let r = 4; r <= Math.min(16, lastRow); r++) {
-      const name = cellVal(sheet, 'B', r);
-      if (name && typeof name === 'string' && name.trim() !== '') {
-        summaryNames.add(name.trim());
-      }
-    }
-
-    // -----------------------------------------------------------------
-    // Phase 2: Parse actual data rows starting at row 18 (0-indexed).
-    // Build parent/child structure.
+    // Phase 1: Parse actual data rows starting at row 18 (0-indexed).
+    // Build parent/child structure using MIN/MAX formula detection.
     // -----------------------------------------------------------------
     const tasks = [];
     let currentParentId = null;
@@ -132,8 +137,8 @@ router.post('/', upload.single('file'), (req, res) => {
 
       const taskId = uuidv4();
 
-      // Determine if this row is a parent (section header)
-      const isParent = summaryNames.has(name);
+      // Determine if this row is a section header via formulas
+      const isParent = isRowSection(sheet, r);
 
       if (isParent) {
         currentParentId = taskId;
@@ -144,6 +149,7 @@ router.post('/', upload.single('file'), (req, res) => {
         parentId: isParent ? null : currentParentId,
         order: orderCounter++,
         name,
+        taskType: isParent ? 'section' : 'task',
         dependency: dependency != null ? String(dependency).trim() : '',
         dependsOnTaskId: null,
         notes: notes != null ? String(notes).trim() : '',
@@ -193,9 +199,13 @@ router.post('/', upload.single('file'), (req, res) => {
     }
 
     // -----------------------------------------------------------------
-    // Persist and respond
+    // Persist and respond (Fully Purging old db)
     // -----------------------------------------------------------------
     fs.writeFileSync(DATA_FILE, JSON.stringify({ tasks }, null, 2), 'utf-8');
+    
+    // Purge maintenance log as well
+    const MAINT_FILE = path.join(__dirname, '..', 'data', 'maintenance.json');
+    fs.writeFileSync(MAINT_FILE, JSON.stringify({ entries: [] }, null, 2), 'utf-8');
 
     // Clean up the uploaded temp file
     try {

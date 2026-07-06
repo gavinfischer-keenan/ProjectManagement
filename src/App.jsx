@@ -9,9 +9,8 @@ import SummaryDashboard from './components/SummaryDashboard.jsx';
 import DailyTaskList from './components/DailyTaskList.jsx';
 import CompletedView from './components/CompletedView.jsx';
 import MaintenanceLog from './components/MaintenanceLog.jsx';
-import MaintenancePrompt from './components/MaintenancePrompt.jsx';
 import ImportWizard from './components/ImportWizard.jsx';
-import ExportButton from './components/ExportButton.jsx';
+import GanttTimeline from './components/GanttTimeline.jsx';
 import {
   fetchTasks, fetchMaintenance,
   updateTask, deleteTask, createTask,
@@ -21,6 +20,7 @@ import {
 const VIEWS = {
   dashboard:    'dashboard',
   tracker:      'tracker',
+  gantt:        'gantt',
   daily:        'daily',
   completed:    'completed',
   maintenance:  'maintenance',
@@ -33,9 +33,9 @@ export default function App() {
   const [maintenanceEntries, setMaintenanceEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ── Maintenance Prompt Modal State ─────────────────────── */
-  const [promptOpen, setPromptOpen] = useState(false);
-  const [promptTask, setPromptTask] = useState(null);
+  /* Dashboard Navigation State */
+  const [focusedSectionId, setFocusedSectionId] = useState(null);
+  const [focusedTaskId, setFocusedTaskId] = useState(null);
 
   /* ── Data Loading ───────────────────────────────────────── */
   const refreshTasks = useCallback(async () => {
@@ -70,10 +70,11 @@ export default function App() {
     try {
       const updated = await updateTask(id, updates);
       setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updated } : t)));
+      refreshTasks(); // fetch full tree to show lock-step date cascading
     } catch (err) {
       console.error('Failed to update task:', err);
     }
-  }, []);
+  }, [refreshTasks]);
 
   /* Callback used by DailyTaskList where the updated task object is passed directly */
   const handleDailyTaskUpdate = useCallback((updatedTask) => {
@@ -85,11 +86,11 @@ export default function App() {
   const handleTaskDelete = useCallback(async (id) => {
     try {
       await deleteTask(id);
-      setTasks((prev) => prev.filter((t) => t.id !== id));
+      refreshTasks(); // fetch full tree to remove cascaded deletions
     } catch (err) {
       console.error('Failed to delete task:', err);
     }
-  }, []);
+  }, [refreshTasks]);
 
   const handleTaskCreate = useCallback(async (task) => {
     try {
@@ -100,28 +101,6 @@ export default function App() {
       console.error('Failed to create task:', err);
       return null;
     }
-  }, []);
-
-  /* ── Maintenance Prompt ────────────────────────────────── */
-  const handleShowMaintenancePrompt = useCallback((task) => {
-    setPromptTask(task);
-    setPromptOpen(true);
-  }, []);
-
-  const handleMaintenanceSubmit = useCallback(async (entry) => {
-    try {
-      const created = await createMaintenance(entry);
-      setMaintenanceEntries((prev) => [...prev, created]);
-    } catch (err) {
-      console.error('Failed to add maintenance entry:', err);
-    }
-    setPromptOpen(false);
-    setPromptTask(null);
-  }, []);
-
-  const handleMaintenanceSkip = useCallback(() => {
-    setPromptOpen(false);
-    setPromptTask(null);
   }, []);
 
   /* ── Maintenance CRUD ──────────────────────────────────── */
@@ -147,6 +126,41 @@ export default function App() {
     await refreshTasks();
   }, [refreshTasks]);
 
+  /* ── Milestone Complete ─────────────────────────────────── */
+  const handleMilestoneComplete = useCallback(async (task, milestoneText, allTasks) => {
+    // Walk up parent chain to find the top-level section name
+    const getSectionName = (t, tList) => {
+      if (!t) return '';
+      if (!t.parentId) return t.name; // it IS the section
+      const parent = tList.find(p => p.id === t.parentId);
+      return getSectionName(parent, tList);
+    };
+    const sectionName = getSectionName(task, allTasks);
+    const sectionTask = allTasks.find(t => !t.parentId && t.name === sectionName);
+
+    const todayISO = (() => {
+      const n = new Date();
+      return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+    })();
+
+    try {
+      const created = await createMaintenance({
+        description: milestoneText || `Milestone: ${task.name}`,
+        isMilestone: true,
+        milestoneText: milestoneText || task.name,
+        sectionName: sectionName || '',
+        sectionId: sectionTask?.id || null,
+        taskId: task.id,
+        dateOfRepair: todayISO,
+        dateWhenFixed: todayISO,
+        notes: `Auto-logged when task "${task.name}" was marked complete.`,
+      });
+      setMaintenanceEntries(prev => [...prev, created]);
+    } catch (err) {
+      console.error('Failed to log milestone:', err);
+    }
+  }, []);
+
   /* ── View Rendering ─────────────────────────────────────── */
   const renderContent = () => {
     if (loading) {
@@ -163,18 +177,31 @@ export default function App() {
         return (
           <TaskTable
             tasks={tasks}
+            maintenanceEntries={maintenanceEntries}
             onTaskUpdate={handleTaskUpdate}
             onTaskDelete={handleTaskDelete}
             onTaskCreate={handleTaskCreate}
-            onShowMaintenancePrompt={handleShowMaintenancePrompt}
+            onTasksRefresh={refreshTasks}
+            onMilestoneComplete={handleMilestoneComplete}
+            focusedSectionId={focusedSectionId}
+            focusedTaskId={focusedTaskId}
+            onClearFocus={() => { setFocusedSectionId(null); setFocusedTaskId(null); }}
           />
         );
 
       case VIEWS.dashboard:
         return (
-          <SummaryDashboard
-            tasks={tasks}
-            maintenanceEntries={maintenanceEntries}
+          <SummaryDashboard 
+            tasks={tasks} 
+            maintenanceEntries={maintenanceEntries} 
+            onFocusSection={(id) => {
+              setFocusedSectionId(id);
+              setCurrentView(VIEWS.tracker);
+            }}
+            onFocusTask={(id) => {
+              setFocusedTaskId(id);
+              setCurrentView(VIEWS.tracker);
+            }}
           />
         );
 
@@ -183,12 +210,25 @@ export default function App() {
           <DailyTaskList
             tasks={tasks}
             onTaskUpdate={handleDailyTaskUpdate}
-            onShowMaintenancePrompt={handleShowMaintenancePrompt}
           />
         );
 
       case VIEWS.completed:
         return <CompletedView tasks={tasks} />;
+
+      case VIEWS.gantt:
+        return (
+          <div className="gantt-full-view">
+            <GanttTimeline 
+              tasks={tasks} 
+              fullPage 
+              onFocusTask={(id) => {
+                setFocusedTaskId(id);
+                setCurrentView(VIEWS.tracker);
+              }}
+            />
+          </div>
+        );
 
       case VIEWS.maintenance:
         return (
@@ -211,21 +251,8 @@ export default function App() {
 
   /* ── Render ─────────────────────────────────────────────── */
   return (
-    <Layout currentView={currentView} onNavigate={setCurrentView}>
+    <Layout currentView={currentView} onNavigate={setCurrentView} tasks={tasks} maintenanceEntries={maintenanceEntries}>
       {renderContent()}
-
-      {/* Global: Export Button (always visible in header area) */}
-      <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 900 }}>
-        <ExportButton tasks={tasks} maintenanceEntries={maintenanceEntries} />
-      </div>
-
-      {/* Global: Maintenance Prompt Modal */}
-      <MaintenancePrompt
-        isOpen={promptOpen}
-        task={promptTask}
-        onSubmit={handleMaintenanceSubmit}
-        onSkip={handleMaintenanceSkip}
-      />
     </Layout>
   );
 }
