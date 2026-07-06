@@ -11,7 +11,7 @@ import CompletedView from './components/CompletedView.jsx';
 import MaintenanceLog from './components/MaintenanceLog.jsx';
 import MaintenancePrompt from './components/MaintenancePrompt.jsx';
 import ImportWizard from './components/ImportWizard.jsx';
-import ExportButton from './components/ExportButton.jsx';
+import GanttTimeline from './components/GanttTimeline.jsx';
 import {
   fetchTasks, fetchMaintenance,
   updateTask, deleteTask, createTask,
@@ -21,6 +21,7 @@ import {
 const VIEWS = {
   dashboard:    'dashboard',
   tracker:      'tracker',
+  gantt:        'gantt',
   daily:        'daily',
   completed:    'completed',
   maintenance:  'maintenance',
@@ -163,6 +164,7 @@ export default function App() {
         return (
           <TaskTable
             tasks={tasks}
+            maintenanceEntries={maintenanceEntries}
             onTaskUpdate={handleTaskUpdate}
             onTaskDelete={handleTaskDelete}
             onTaskCreate={handleTaskCreate}
@@ -190,6 +192,13 @@ export default function App() {
       case VIEWS.completed:
         return <CompletedView tasks={tasks} />;
 
+      case VIEWS.gantt:
+        return (
+          <div className="gantt-full-view">
+            <GanttTimeline tasks={tasks} fullPage />
+          </div>
+        );
+
       case VIEWS.maintenance:
         return (
           <MaintenanceLog
@@ -211,13 +220,8 @@ export default function App() {
 
   /* ── Render ─────────────────────────────────────────────── */
   return (
-    <Layout currentView={currentView} onNavigate={setCurrentView}>
+    <Layout currentView={currentView} onNavigate={setCurrentView} tasks={tasks} maintenanceEntries={maintenanceEntries}>
       {renderContent()}
-
-      {/* Global: Export Button (always visible in header area) */}
-      <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 900 }}>
-        <ExportButton tasks={tasks} maintenanceEntries={maintenanceEntries} />
-      </div>
 
       {/* Global: Maintenance Prompt Modal */}
       <MaintenancePrompt

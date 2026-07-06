@@ -176,6 +176,15 @@ export default function TaskRow({
             {isSection && rollup && rollup.totalChildren === 0 && (
               <span className="section-empty-hint">drag tasks here or use indent ▶</span>
             )}
+            {isSection && (
+              <button 
+                className="btn-add-subtask-inline"
+                onClick={() => onAddSubtask(task.id)}
+                title="Add task in this section"
+              >
+                ⊞ Add Subtask
+              </button>
+            )}
           </div>
         </td>
       ) : (

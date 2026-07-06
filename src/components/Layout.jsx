@@ -3,11 +3,13 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import React from 'react';
+import ReportGenerator from './ReportGenerator.jsx';
 
 const NAV_ITEMS = [
   { id: 'dashboard',   icon: '📊', label: 'Dashboard' },
   { id: 'tracker',     icon: '📋', label: 'Project Tracker' },
-  { id: 'daily',       icon: '📅', label: 'Daily Tasks' },
+  { id: 'gantt',       icon: '📅', label: 'Gantt Timeline' },
+  { id: 'daily',       icon: '🗓️', label: 'Daily Tasks' },
   { id: 'completed',   icon: '✅', label: 'Completed' },
   { id: 'maintenance', icon: '🔧', label: 'Maintenance Log' },
   { id: 'import',      icon: '📥', label: 'Import Data' },
@@ -16,13 +18,14 @@ const NAV_ITEMS = [
 const VIEW_TITLES = {
   dashboard:   'Dashboard',
   tracker:     'Project Tracker',
+  gantt:       'Gantt Timeline',
   daily:       'Daily Tasks',
   completed:   'Completed Tasks',
   maintenance: 'Maintenance Log',
   import:      'Import Data',
 };
 
-export default function Layout({ currentView, onNavigate, children }) {
+export default function Layout({ currentView, onNavigate, children, tasks, maintenanceEntries }) {
   return (
     <div className="app-layout">
       {/* ── Sidebar ─────────────────────────────────────── */}
@@ -53,6 +56,8 @@ export default function Layout({ currentView, onNavigate, children }) {
           <h1 className="main-header-title">
             {VIEW_TITLES[currentView] || 'Hawaii Project Manager'}
           </h1>
+          {/* Report Generator lives here — visible on every screen */}
+          <ReportGenerator tasks={tasks} maintenanceEntries={maintenanceEntries} />
         </header>
 
         <div className="content-area">

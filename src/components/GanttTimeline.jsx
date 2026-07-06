@@ -13,7 +13,7 @@ function addDays(date, days) {
   return d;
 }
 
-export default function GanttTimeline({ tasks, onClose }) {
+export default function GanttTimeline({ tasks, onClose, fullPage = false }) {
   const containerRef = useRef(null);
 
   const flatList = useMemo(() => {

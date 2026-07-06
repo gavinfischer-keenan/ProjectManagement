@@ -8,7 +8,6 @@ import TaskRow from './TaskRow.jsx';
 import TaskEditModal from './TaskEditModal.jsx';
 import CreateTaskModal from './CreateTaskModal.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
-import GanttTimeline from './GanttTimeline.jsx';
 
 export default function TaskTable({
   tasks,
@@ -29,7 +28,6 @@ export default function TaskTable({
   const [editingTask, setEditingTask] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [dragState, setDragState] = useState({ dragId: null, overId: null });
-  const [showGantt, setShowGantt] = useState(false);
   const [createModal, setCreateModal] = useState(null); // { defaultType, defaultParentId } | null
 
   /* ── Tree ───────────────────────────────────────────────── */
@@ -168,23 +166,33 @@ export default function TaskTable({
   }, []);
 
   const handleCreateSave = useCallback(async (payload) => {
-    const order = tasks.filter((t) => !t.parentId).length;
-    await onTaskCreate({ order, ...payload });
+    // 1. Shift existing siblings down by 1 to make room at order 0
+    const parentId = payload.parentId || null;
+    const siblings = tasks.filter((t) => t.parentId === parentId);
+    if (siblings.length > 0) {
+      const orderings = siblings.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
+      try {
+        await fetch('/api/tasks/reorder', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderings }),
+        });
+      } catch (err) {
+        console.error('Failed to shift task orders for new task:', err);
+      }
+    }
+
+    // 2. Create the new task at order 0
+    await onTaskCreate({ order: 0, ...payload });
     setCreateModal(null);
   }, [tasks, onTaskCreate]);
 
   const handleAddSubtask = useCallback(
     (parentId) => {
-      const newTask = {
-        name: 'New Sub-task',
-        parentId,
-        order: tasks.filter((t) => t.parentId === parentId).length,
-        status: 'Not Started',
-        percentComplete: 0,
-      };
-      onTaskCreate(newTask);
+      // Open the creation modal pre-filled with this section as the parent
+      setCreateModal({ defaultType: 'task', defaultParentId: parentId });
     },
-    [tasks, onTaskCreate]
+    []
   );
 
   /* ── Drag & Drop ────────────────────────────────────────── */
@@ -295,25 +303,17 @@ export default function TaskTable({
     <div>
       <div className="table-toolbar">
         <h2 className="table-title">Project Tasks</h2>
-        <div className="table-toolbar-actions">
-          <button
-            className={`btn btn-sm ${showGantt ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setShowGantt((v) => !v)}
-            title={showGantt ? 'Hide Gantt Timeline' : 'Show Gantt Timeline'}
-          >
-            📅 Timeline
-          </button>
-          <button className="btn btn-secondary btn-sm" onClick={handleAddSection} title="Add a new section header">
+        <div className="toolbar-primary-actions">
+          <button className="btn btn-secondary btn-md" onClick={handleAddSection} title="Add a new section header">
             § Add Section
           </button>
-          <button className="btn btn-primary btn-sm" onClick={handleAddTask}>
+          <button className="btn btn-primary btn-md" onClick={handleAddTask}>
             + Add Task
           </button>
         </div>
       </div>
 
-      <div className={`tracker-layout ${showGantt ? 'gantt-open' : ''}`}>
-        <div className="task-table-container">
+      <div className="task-table-container">
         <table className="task-table">
           <thead>
             <tr>
@@ -359,14 +359,7 @@ export default function TaskTable({
           </tbody>
         </table>
         </div> {/* end task-table-container */}
-
-      {/* Gantt Side Panel */}
-      {showGantt && (
-        <div className="gantt-side-panel">
-          <GanttTimeline tasks={tasks} onClose={() => setShowGantt(false)} />
-        </div>
-      )}
-      </div>  {/* end tracker-layout */}
+      </div> {/* end tracker-layout wrapper */}
 
       {/* Create Task/Section Modal */}
       {createModal && (
