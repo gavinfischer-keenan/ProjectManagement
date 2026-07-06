@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { buildTree, flattenTree } from '../utils/treeUtils.js';
+import { buildTree, flattenTree, applyDependencyDepths } from '../utils/treeUtils.js';
 import TaskRow from './TaskRow.jsx';
 import TaskEditModal from './TaskEditModal.jsx';
 import CreateTaskModal from './CreateTaskModal.jsx';
@@ -34,7 +34,7 @@ export default function TaskTable({
 
   /* ── Tree ───────────────────────────────────────────────── */
   const tree = useMemo(() => buildTree(tasks), [tasks]);
-  const flatList = useMemo(() => flattenTree(tree), [tree]);
+  const flatList = useMemo(() => applyDependencyDepths(flattenTree(tree)), [tree]);
 
   // Initialize expanded IDs when tasks change (add any new parent IDs)
   useMemo(() => {

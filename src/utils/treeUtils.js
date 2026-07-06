@@ -58,6 +58,31 @@ export function flattenTree(tree, depth = 0) {
 }
 
 /**
+ * Calculate dependency depth for a flattened array of tasks.
+ * If A->B->C, A is depDepth 0, B is 1, C is 2.
+ */
+export function applyDependencyDepths(flatTasks) {
+  const taskMap = new Map();
+  flatTasks.forEach(t => taskMap.set(t.id, t));
+
+  const getDepDepth = (taskId, visited = new Set()) => {
+    if (!taskId) return 0;
+    if (visited.has(taskId)) return 0; // circular dependency protection
+    visited.add(taskId);
+
+    const task = taskMap.get(taskId);
+    if (!task || !task.dependsOnTaskId) return 0;
+
+    return 1 + getDepDepth(task.dependsOnTaskId, visited);
+  };
+
+  return flatTasks.map(task => ({
+    ...task,
+    depDepth: getDepDepth(task.id)
+  }));
+}
+
+/**
  * Get all descendant IDs for a given task ID.
  */
 export function getDescendantIds(taskId, flatTasks) {

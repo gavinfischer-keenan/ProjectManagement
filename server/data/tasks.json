@@ -55,24 +55,6 @@
       "percentComplete": 100
     },
     {
-      "id": "45d116a7-1625-4f4b-96f5-7ea8d8c286d8",
-      "parentId": "d78fd88b-635f-4c52-83f0-7de5c3057b3d",
-      "order": 11,
-      "name": "Electrical Install",
-      "taskType": "task",
-      "dependency": "",
-      "dependsOnTaskId": null,
-      "notes": "",
-      "targetDateStart": "2026-06-30",
-      "targetDateFinish": "2026-08-06",
-      "dateStarted": null,
-      "dateFinished": null,
-      "duration": 37,
-      "status": "In Progress",
-      "delayed": false,
-      "percentComplete": 0
-    },
-    {
       "id": "ad18e994-f855-4f92-97c4-61b27b7d70f2",
       "parentId": "d78fd88b-635f-4c52-83f0-7de5c3057b3d",
       "order": 12,
@@ -2455,16 +2437,16 @@
       "name": "Pick AC installer",
       "taskType": "task",
       "dependency": "",
-      "dependsOnTaskId": null,
+      "dependsOnTaskId": "",
       "notes": "",
-      "targetDateStart": null,
+      "targetDateStart": "2026-07-02",
       "targetDateFinish": "2026-07-17",
-      "dateStarted": null,
-      "dateFinished": null,
+      "dateStarted": "2026-07-02",
+      "dateFinished": "",
       "duration": null,
-      "status": "Not Started",
+      "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 10
     }
   ]
 }
