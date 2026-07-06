@@ -63,6 +63,9 @@ npm test
 - [Express](https://expressjs.com/)
 - [SheetJS (xlsx)](https://sheetjs.com/) - For Excel import/export
 
+<img width="2467" height="1309" alt="image" src="https://github.com/user-attachments/assets/86e8a508-a8ec-4a01-ae65-5e140d8b756e" />
+
+
 ## License
 
 Private / Proprietary
