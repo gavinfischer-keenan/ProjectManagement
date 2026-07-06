@@ -15,6 +15,7 @@ export default function TaskTable({
   onTaskDelete,
   onTaskCreate,
   onShowMaintenancePrompt,
+  onTasksRefresh,
 }) {
   /* ── State ──────────────────────────────────────────────── */
   const [expandedIds, setExpandedIds] = useState(() => {
@@ -82,12 +83,62 @@ export default function TaskTable({
 
   const handleEditSave = useCallback(
     async (updatedData) => {
-      if (editingTask) {
-        await onTaskUpdate(editingTask.id, updatedData);
-        setEditingTask(null);
+      if (!editingTask) return;
+
+      let needsRefresh = false;
+
+      // If dependency changed and is not null
+      if (
+        updatedData.dependsOnTaskId &&
+        updatedData.dependsOnTaskId !== editingTask.dependsOnTaskId
+      ) {
+        const predecessor = tasks.find((t) => t.id === updatedData.dependsOnTaskId);
+        const currentTask = tasks.find((t) => t.id === editingTask.id);
+        
+        if (predecessor && currentTask) {
+          const insertAt = (predecessor.order ?? 0) + 1;
+          const newParentId = predecessor.parentId || null;
+          
+          const isCorrectlyPositioned = 
+            currentTask.parentId === newParentId && 
+            (currentTask.order ?? 0) === insertAt;
+
+          if (!isCorrectlyPositioned) {
+            updatedData.parentId = newParentId;
+            updatedData.order = insertAt;
+            needsRefresh = true;
+            
+            // Shift siblings down
+            const siblings = tasks.filter(
+              (t) => t.parentId === newParentId && t.id !== editingTask.id
+            );
+            const toShift = siblings.filter((t) => (t.order ?? 0) >= insertAt);
+            
+            if (toShift.length > 0) {
+              const orderings = toShift.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
+              try {
+                await fetch('/api/tasks/reorder', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ orderings }),
+                });
+              } catch (err) {
+                console.error('Failed to shift task orders:', err);
+              }
+            }
+          }
+        }
       }
+
+      await onTaskUpdate(editingTask.id, updatedData);
+      
+      if (needsRefresh && onTasksRefresh) {
+        await onTasksRefresh();
+      }
+
+      setEditingTask(null);
     },
-    [editingTask, onTaskUpdate]
+    [editingTask, onTaskUpdate, tasks, onTasksRefresh]
   );
 
   /**
@@ -133,9 +184,12 @@ export default function TaskTable({
         targetDateFinish: prereqFinish || editingTask.targetDateStart || null,
       };
       const created = await onTaskCreate(newTask);
+      if (onTasksRefresh) {
+        await onTasksRefresh();
+      }
       return created;
     },
-    [editingTask, tasks, onTaskCreate]
+    [editingTask, tasks, onTaskCreate, onTasksRefresh]
   );
 
   const handleDeleteRequest = useCallback(

@@ -169,6 +169,7 @@ export default function App() {
             onTaskDelete={handleTaskDelete}
             onTaskCreate={handleTaskCreate}
             onShowMaintenancePrompt={handleShowMaintenancePrompt}
+            onTasksRefresh={refreshTasks}
           />
         );
 
