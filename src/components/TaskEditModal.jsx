@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { canStartTask, calculateRollup } from '../utils/treeUtils.js';
+import { daysBetween, addDaysToISO } from '../utils/dateUtils.js';
 
 export default function TaskEditModal({
   task,
@@ -60,7 +61,45 @@ export default function TaskEditModal({
 
   /* ── Handlers ───────────────────────────────────────────── */
   const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      
+      if (field === 'targetDateStart') {
+        const start = value;
+        const finish = next.targetDateFinish;
+        const dur = next.duration;
+        
+        if (start && finish) {
+          next.duration = daysBetween(start, finish);
+        } else if (start && dur) {
+          next.targetDateFinish = addDaysToISO(start, Number(dur));
+        }
+      } else if (field === 'targetDateFinish') {
+        const start = next.targetDateStart;
+        const finish = value;
+        const dur = next.duration;
+        
+        if (start && finish) {
+          next.duration = daysBetween(start, finish);
+        } else if (finish && dur) {
+          next.targetDateStart = addDaysToISO(finish, -Number(dur));
+        }
+      } else if (field === 'duration') {
+        const start = next.targetDateStart;
+        const finish = next.targetDateFinish;
+        const dur = value !== '' ? Number(value) : null;
+        
+        if (dur !== null) {
+          if (start) {
+            next.targetDateFinish = addDaysToISO(start, dur);
+          } else if (finish) {
+            next.targetDateStart = addDaysToISO(finish, -dur);
+          }
+        }
+      }
+      
+      return next;
+    });
   };
 
   const handleDateFinishedChange = (value) => {
