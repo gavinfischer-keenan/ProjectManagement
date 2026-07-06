@@ -1,4 +1,4 @@
-# Hawaii Project Manager - User Manual
+# Hawaii Project Manager - User Manual (v0.9)
 
 Welcome to the Hawaii Project Manager! This application is designed to help you organize, schedule, and track tasks for your projects, with a special focus on maintenance and construction workflows.
 
@@ -39,6 +39,7 @@ To make a task a "child" of the task above it (or of a Section header), hover ov
 To edit a task's details (Name, Target Dates, Percent Complete, Dependencies), simply click on the task row. This opens the **Task Edit Modal**. 
 - Changes are not saved until you click the **Save Changes** button. 
 - You can add prerequisite tasks directly from the edit modal.
+- You can also mark tasks as Milestones or flag them as involving New Hardware installations.
 
 ---
 
@@ -48,18 +49,32 @@ The **Gantt Timeline** provides a visual schedule of your project based on the "
 - Tasks that are "In Progress" appear in blue.
 - "Completed" tasks appear in green.
 - Tasks that are past their Target Finish date but are not yet completed will appear in **red** (Late).
+- Actual timeframes (from Start Date to Finish Date) render as solid bars.
+- Planned timeframes extending past the actual date (or into the future) render as ghost hatched bars.
+- The timeline has weekly demarcations.
 
 ---
 
-## 4. Maintenance Logs
+## 4. Daily Tasks
+
+The **Daily Tasks** view is your day-to-day execution dashboard, removing the clutter of the larger project plan.
+- **Actionable Items Only:** This view strictly filters out blocked tasks (unless critically delayed) and far-future tasks.
+- **Urgent Flags (⭐️):** Tasks due within 5 days are flagged.
+- **Critical Blockers (🔒):** If a task is blocked by a prerequisite that is also behind schedule, it will surface with a lock icon and warn you of the blocker.
+- **Delayed:** Overdue tasks are automatically bubbled up to a high-visibility, red `⚠️ DELAYED` box at the very top.
+- Click any row to bring up the Task Edit Modal.
+
+---
+
+## 5. Maintenance Logs
 
 If a task involves repairing or replacing equipment, you may want to log it. When marking a task as 100% complete, the system may prompt you to optionally add a Maintenance Log entry. 
 
-You can view, edit, and manually add all maintenance records from the **Maintenance Log** tab in the sidebar.
+You can view, edit, and manually add all maintenance records from the **Maintenance Log** tab in the sidebar. Milestones marked in the task tracker are also automatically logged to the Maintenance Log when completed.
 
 ---
 
-## 5. Exporting Data (Report Generator)
+## 6. Exporting Data (Report Generator)
 
 At the top right of the application header, you will see a **Report Generator** panel. This is available from any screen.
 
@@ -74,7 +89,7 @@ At the top right of the application header, you will see a **Report Generator** 
 
 ---
 
-## 6. Importing Data
+## 7. Importing Data
 
 If you have an existing project plan in Excel, you can import it into Hawaii PM.
 1. Navigate to the **Import Data** tab.
