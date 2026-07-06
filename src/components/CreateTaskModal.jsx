@@ -69,9 +69,7 @@ export default function CreateTaskModal({
     onSave(payload);
   };
 
-  const potentialParents = allTasks.filter(
-    (t) => t.taskType === 'section' || !t.parentId
-  );
+  const potentialParents = allTasks.filter((t) => t.taskType === 'section');
 
   return (
     <div

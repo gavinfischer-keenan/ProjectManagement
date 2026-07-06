@@ -288,11 +288,14 @@ export default function TaskTable({
       const targetTask = tasks.find((t) => t.id === targetId);
       if (!sourceTask || !targetTask) return;
 
-      // If dropping onto a SECTION: nest without dependency
-      // If dropping onto a TASK: nest AND create dependency (old behaviour)
       const isTargetSection = targetTask.taskType === 'section';
-      const updates = { parentId: targetTask.id };
-      if (!isTargetSection) updates.dependsOnTaskId = targetTask.id;
+      const updates = {};
+      if (isTargetSection) {
+        updates.parentId = targetTask.id;
+      } else {
+        updates.parentId = targetTask.parentId;
+        updates.dependsOnTaskId = targetTask.id;
+      }
 
       await onTaskUpdate(sourceTask.id, updates);
     },
@@ -313,10 +316,14 @@ export default function TaskTable({
       if (task.parentId === taskAbove.id) return;
 
       const isAboveSection = taskAbove.taskType === 'section';
-      const updates = { parentId: taskAbove.id };
+      const updates = {};
 
-      if (!isAboveSection) {
-        // Task-on-task indent: create dependency
+      if (isAboveSection) {
+        // Section indent: become a child of the section
+        updates.parentId = taskAbove.id;
+      } else {
+        // Task-on-task indent: create dependency, but remain a sibling
+        updates.parentId = taskAbove.parentId;
         updates.dependsOnTaskId = taskAbove.id;
         updates.dependency = taskAbove.name;
         if (taskAbove.targetDateFinish) {
