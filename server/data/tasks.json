@@ -259,16 +259,16 @@
       "name": "remove (camera front door / Cameras garage / Key box on stairs / Laundry line back yard",
       "taskType": "task",
       "dependency": "",
-      "dependsOnTaskId": null,
+      "dependsOnTaskId": "",
       "notes": "",
       "targetDateStart": "2026-06-30",
-      "targetDateFinish": "2026-07-05",
-      "dateStarted": null,
-      "dateFinished": null,
+      "targetDateFinish": "2026-07-07",
+      "dateStarted": "2026-07-04",
+      "dateFinished": "",
       "duration": 5,
-      "status": "Not Started",
+      "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 10
     },
     {
       "id": "eeb28f3b-1a44-44ca-9ef4-592f4450cebf",

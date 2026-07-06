@@ -71,10 +71,11 @@ export default function App() {
     try {
       const updated = await updateTask(id, updates);
       setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updated } : t)));
+      refreshTasks(); // fetch full tree to show lock-step date cascading
     } catch (err) {
       console.error('Failed to update task:', err);
     }
-  }, []);
+  }, [refreshTasks]);
 
   /* Callback used by DailyTaskList where the updated task object is passed directly */
   const handleDailyTaskUpdate = useCallback((updatedTask) => {
@@ -86,11 +87,11 @@ export default function App() {
   const handleTaskDelete = useCallback(async (id) => {
     try {
       await deleteTask(id);
-      setTasks((prev) => prev.filter((t) => t.id !== id));
+      refreshTasks(); // fetch full tree to remove cascaded deletions
     } catch (err) {
       console.error('Failed to delete task:', err);
     }
-  }, []);
+  }, [refreshTasks]);
 
   const handleTaskCreate = useCallback(async (task) => {
     try {
