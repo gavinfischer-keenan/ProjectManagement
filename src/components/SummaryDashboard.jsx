@@ -27,9 +27,7 @@ export default function SummaryDashboard({ tasks = [], maintenanceEntries = [], 
 
   /* ── Section (top-level parents) rollups ─────────────── */
   const sections = useMemo(() => {
-    const topParents = tasks.filter(
-      (t) => t.parentId === null && tasks.some((c) => c.parentId === t.id)
-    );
+    const topParents = tasks.filter((t) => t.taskType === 'section');
 
     function getLeaves(parentId) {
       const direct = tasks.filter((t) => t.parentId === parentId);

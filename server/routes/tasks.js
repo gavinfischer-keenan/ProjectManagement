@@ -184,7 +184,8 @@ router.put('/:id', (req, res) => {
       'parentId', 'order', 'name', 'taskType', 'dependency', 'dependsOnTaskId',
       'notes', 'targetDateStart', 'targetDateFinish', 'dateStarted',
       'dateFinished', 'duration', 'status', 'delayed', 'percentComplete',
-      'isMilestone', 'milestoneText', 'isHardware', 'hardwareText'
+      'isMilestone', 'milestoneText', 'isHardware', 'hardwareText', 'vendorId',
+      'supplies'
     ];
 
     for (const field of updatable) {

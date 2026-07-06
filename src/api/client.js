@@ -114,3 +114,50 @@ export async function importExcel(formData) {
 
   return res.json();
 }
+
+/* ── Vendors ─────────────────────────────────────────────────── */
+
+export async function fetchVendors() {
+  return request('/vendors');
+}
+
+export async function createVendor(vendor) {
+  return request('/vendors', {
+    method: 'POST',
+    body: JSON.stringify(vendor),
+  });
+}
+
+export async function updateVendor(id, updates) {
+  return request(`/vendors/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteVendor(id) {
+  return request(`/vendors/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function addVendorInteraction(vendorId, interaction) {
+  return request(`/vendors/${vendorId}/interactions`, {
+    method: 'POST',
+    body: JSON.stringify(interaction),
+  });
+}
+
+export async function updateVendorInteraction(vendorId, interactionId, updates) {
+  return request(`/vendors/${vendorId}/interactions/${interactionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteVendorInteraction(vendorId, interactionId) {
+  return request(`/vendors/${vendorId}/interactions/${interactionId}`, {
+    method: 'DELETE',
+  });
+}
+

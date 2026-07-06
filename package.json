@@ -1,6 +1,6 @@
 {
   "name": "hawaii-pm",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Hawaii House Project Management Tool",
   "type": "module",
   "scripts": {

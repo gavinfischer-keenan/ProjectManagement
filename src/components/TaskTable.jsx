@@ -11,14 +11,17 @@ import ConfirmDialog from './ConfirmDialog.jsx';
 
 export default function TaskTable({
   tasks,
+  vendors = [],
   onTaskUpdate,
   onTaskDelete,
   onTaskCreate,
   onShowMaintenancePrompt,
   onTasksRefresh,
   onMilestoneComplete,
+  onVendorCreate,
   focusedSectionId,
   focusedTaskId,
+  vendorTaskDefaults,
   onClearFocus,
 }) {
   /* ── State ──────────────────────────────────────────────── */
@@ -99,6 +102,13 @@ export default function TaskTable({
       }, 100);
     }
   }, [focusedTaskId, focusedSectionId, tasks, onClearFocus]);
+
+  /* ── Vendor task defaults (from Vendor CRM "Create Task") ─── */
+  React.useEffect(() => {
+    if (vendorTaskDefaults) {
+      setCreateModal({ defaultType: 'task', defaultParentId: null, prefill: vendorTaskDefaults });
+    }
+  }, [vendorTaskDefaults]);
 
   /* ── Handlers ───────────────────────────────────────────── */
   const handleToggleExpand = useCallback((id) => {
@@ -323,45 +333,87 @@ export default function TaskTable({
       const targetTask = tasks.find((t) => t.id === targetId);
       if (!sourceTask || !targetTask) return;
 
+      // Find dependency chain (tasks that act as visual children)
+      const getChain = (taskId) => {
+        const deps = tasks.filter(t => t.dependsOnTaskId === taskId && t.parentId === sourceTask.parentId);
+        let chain = [...deps];
+        for (const d of deps) {
+          chain = chain.concat(getChain(d.id));
+        }
+        return chain;
+      };
+      
+      const chainToMove = getChain(sourceTask.id).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const tasksToMove = [sourceTask, ...chainToMove];
+
+      // Prevent dropping onto itself or its own descendants
+      if (tasksToMove.some(t => t.id === targetId)) return;
+
       const isTargetSection = targetTask.taskType === 'section';
       const newParentId = isTargetSection ? targetTask.id : targetTask.parentId;
-      const insertAt = isTargetSection ? 0 : (targetTask.order ?? 0) + 1;
 
-      // Shift siblings down
-      const siblings = tasks.filter(
-        (t) => t.parentId === newParentId && t.id !== sourceTask.id
-      );
-      const toShift = siblings.filter((t) => (t.order ?? 0) >= insertAt);
-      
-      if (toShift.length > 0) {
-        const orderings = toShift.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
-        try {
-          await fetch('/api/tasks/reorder', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderings }),
-          });
-        } catch (err) {
-          console.error('Failed to shift task orders during drag-drop:', err);
+      // 1. Reorder source siblings to close the gap if moving to a new section
+      if (sourceTask.parentId !== newParentId) {
+        const remainingSourceSiblings = tasks
+          .filter(t => t.parentId === sourceTask.parentId && !tasksToMove.some(m => m.id === t.id))
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        
+        const sourceOrderings = remainingSourceSiblings.map((t, idx) => ({ id: t.id, order: idx }));
+        if (sourceOrderings.length > 0) {
+          try {
+            await fetch('/api/tasks/reorder', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderings: sourceOrderings }),
+            });
+          } catch(e) { console.error(e); }
         }
       }
 
-      const updates = {
-        parentId: newParentId,
-        order: insertAt
-      };
+      // 2. Insert tasksToMove into the target section
+      const targetSiblings = tasks
+        .filter(t => t.parentId === newParentId && !tasksToMove.some(m => m.id === t.id))
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      let insertIdx = 0;
+      if (!isTargetSection) {
+        const targetIdx = targetSiblings.findIndex(t => t.id === targetId);
+        if (targetIdx >= 0) insertIdx = targetIdx + 1;
+        else insertIdx = targetSiblings.length;
+      }
+
+      targetSiblings.splice(insertIdx, 0, ...tasksToMove);
+
+      const targetOrderings = targetSiblings.map((t, idx) => ({ id: t.id, order: idx }));
+      try {
+        await fetch('/api/tasks/reorder', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderings: targetOrderings }),
+        });
+      } catch (err) { console.error('Failed to update orders:', err); }
+
+      // 3. Update parentId for all moved tasks, and dependencies for the head task
+      const headUpdates = { parentId: newParentId };
       if (isTargetSection) {
-        updates.dependsOnTaskId = null;
-        updates.dependency = '';
+        headUpdates.dependsOnTaskId = null;
+        headUpdates.dependency = '';
       } else {
-        updates.dependsOnTaskId = targetTask.id;
-        updates.dependency = targetTask.name;
+        headUpdates.dependsOnTaskId = targetTask.id;
+        headUpdates.dependency = targetTask.name;
         if (targetTask.targetDateFinish) {
-          updates.targetDateStart = targetTask.targetDateFinish;
+          headUpdates.targetDateStart = targetTask.targetDateFinish;
         }
       }
+      
+      await onTaskUpdate(sourceTask.id, headUpdates);
+      
+      if (sourceTask.parentId !== newParentId) {
+        await Promise.all(
+          chainToMove.map(t => onTaskUpdate(t.id, { parentId: newParentId }))
+        );
+      }
 
-      await onTaskUpdate(sourceTask.id, updates);
       if (onTasksRefresh) {
         await onTasksRefresh();
       }
@@ -507,6 +559,7 @@ export default function TaskTable({
           allTasks={tasks}
           defaultType={createModal.defaultType}
           defaultParentId={createModal.defaultParentId}
+          prefill={createModal.prefill || null}
           onSave={handleCreateSave}
           onClose={() => setCreateModal(null)}
         />
@@ -517,10 +570,12 @@ export default function TaskTable({
         <TaskEditModal
           task={editingTask}
           allTasks={tasks}
+          vendors={vendors}
           onSave={handleEditSave}
           onClose={() => setEditingTask(null)}
           onShowMaintenancePrompt={onShowMaintenancePrompt}
           onCreatePrerequisite={handleCreatePrerequisiteFor}
+          onVendorCreate={onVendorCreate}
         />
       )}
 
