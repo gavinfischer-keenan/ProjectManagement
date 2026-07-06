@@ -83,12 +83,12 @@
       "notes": "New Pads",
       "targetDateStart": "2026-07-01",
       "targetDateFinish": "2026-07-07",
-      "dateStarted": null,
-      "dateFinished": null,
+      "dateStarted": "2026-07-05",
+      "dateFinished": "",
       "duration": 6,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 60
     },
     {
       "id": "368cae09-ad88-452b-b944-a98d21f74db4",

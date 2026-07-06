@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { canStartTask } from '../utils/treeUtils.js';
+import { canStartTask, calculateRollup } from '../utils/treeUtils.js';
 
 export default function TaskEditModal({
   task,
@@ -13,6 +13,9 @@ export default function TaskEditModal({
   onShowMaintenancePrompt,
   onCreatePrerequisite, // async (name, targetFinish) => createdTask
 }) {
+  const isParent = allTasks.some(t => t.parentId === task.id);
+  const rollup = isParent ? calculateRollup(task, allTasks) : null;
+
   /* ── Form State ─────────────────────────────────────────── */
   const [form, setForm] = useState({
     name:             task.name || '',
@@ -86,6 +89,8 @@ export default function TaskEditModal({
     } else if (value === 'In Progress') {
       if (!form.dateStarted) updates.dateStarted = todayStr();
       if (form.percentComplete === 100) updates.percentComplete = 50;
+      // Enforce 10% minimum for In Progress
+      if (form.percentComplete < 10) updates.percentComplete = 10;
     } else if (value === 'Not Started') {
       updates.percentComplete = 0;
     }
@@ -93,17 +98,33 @@ export default function TaskEditModal({
   };
 
   const handlePercentChange = (value) => {
-    const num = Number(value);
+    let num = Number(value);
+    
+    // Enforce 10% minimum if they try to drag below 10 while in progress (unless they drag to 0 to mark Not Started)
+    if (form.status === 'In Progress' && num < 10 && num > 0) {
+      num = 10;
+    }
+
     const updates = { percentComplete: num };
     if (num === 100) {
       updates.status = 'Completed';
       if (!form.dateFinished) updates.dateFinished = todayStr();
       if (!form.dateStarted) updates.dateStarted = form.targetDateStart || todayStr();
     } else if (num > 0) {
-      updates.status = 'In Progress';
-      if (!form.dateStarted) updates.dateStarted = todayStr();
-    } else {
+      if (form.status === 'Completed' || form.status === 'Not Started') {
+        updates.status = 'In Progress';
+        // Enforce 10% minimum when switching to In Progress via slider
+        if (num < 10) {
+          num = 10;
+          updates.percentComplete = 10;
+        }
+      }
+      if (!form.dateStarted) updates.dateStarted = form.targetDateStart || todayStr();
+      if (form.dateFinished) updates.dateFinished = '';
+    } else if (num === 0) {
       updates.status = 'Not Started';
+      updates.dateFinished = '';
+      updates.dateStarted = '';
     }
     setForm((prev) => ({ ...prev, ...updates }));
   };
@@ -382,8 +403,9 @@ export default function TaskEditModal({
                 <label className="form-label">Status</label>
                 <select
                   className="form-select"
-                  value={form.status}
+                  value={isParent ? rollup.status : form.status}
                   onChange={(e) => handleStatusChange(e.target.value)}
+                  disabled={isParent}
                 >
                   <option value="Not Started">Not Started</option>
                   <option value="In Progress">In Progress</option>
@@ -396,16 +418,27 @@ export default function TaskEditModal({
             {/* Percent Complete */}
             <div className="form-group">
               <label className="form-label">
-                Percent Complete: {form.percentComplete}%
+                Percent Complete: {isParent ? rollup.percentComplete : form.percentComplete}%
               </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={form.percentComplete}
-                onChange={(e) => handlePercentChange(e.target.value)}
-              />
+              {isParent ? (
+                <>
+                  <progress 
+                    value={rollup.percentComplete} 
+                    max="100" 
+                    style={{ width: '100%', height: '12px' }}
+                  />
+                  <span className="form-help">Status and progress are calculated automatically from sub-tasks.</span>
+                </>
+              ) : (
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={form.percentComplete}
+                  onChange={(e) => handlePercentChange(e.target.value)}
+                />
+              )}
             </div>
 
             {/* Delayed Checkbox */}
