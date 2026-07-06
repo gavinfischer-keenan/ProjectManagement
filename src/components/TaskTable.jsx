@@ -289,17 +289,49 @@ export default function TaskTable({
       if (!sourceTask || !targetTask) return;
 
       const isTargetSection = targetTask.taskType === 'section';
-      const updates = {};
+      const newParentId = isTargetSection ? targetTask.id : targetTask.parentId;
+      const insertAt = isTargetSection ? 0 : (targetTask.order ?? 0) + 1;
+
+      // Shift siblings down
+      const siblings = tasks.filter(
+        (t) => t.parentId === newParentId && t.id !== sourceTask.id
+      );
+      const toShift = siblings.filter((t) => (t.order ?? 0) >= insertAt);
+      
+      if (toShift.length > 0) {
+        const orderings = toShift.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
+        try {
+          await fetch('/api/tasks/reorder', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderings }),
+          });
+        } catch (err) {
+          console.error('Failed to shift task orders during drag-drop:', err);
+        }
+      }
+
+      const updates = {
+        parentId: newParentId,
+        order: insertAt
+      };
       if (isTargetSection) {
-        updates.parentId = targetTask.id;
+        updates.dependsOnTaskId = null;
+        updates.dependency = '';
       } else {
-        updates.parentId = targetTask.parentId;
         updates.dependsOnTaskId = targetTask.id;
+        updates.dependency = targetTask.name;
+        if (targetTask.targetDateFinish) {
+          updates.targetDateStart = targetTask.targetDateFinish;
+        }
       }
 
       await onTaskUpdate(sourceTask.id, updates);
+      if (onTasksRefresh) {
+        await onTasksRefresh();
+      }
     },
-    [tasks, onTaskUpdate]
+    [tasks, onTaskUpdate, onTasksRefresh]
   );
 
   const handleDragEnd = useCallback(() => {
