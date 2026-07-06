@@ -132,7 +132,7 @@ export default function TaskTable({
 
       await onTaskUpdate(editingTask.id, updatedData);
       
-      if (needsRefresh && onTasksRefresh) {
+      if (onTasksRefresh) {
         await onTasksRefresh();
       }
 
