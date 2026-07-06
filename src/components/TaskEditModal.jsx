@@ -218,6 +218,18 @@ export default function TaskEditModal({
               />
             </div>
 
+            {/* Notes */}
+            <div className="form-group" style={{ marginTop: '0.5rem' }}>
+              <label className="form-label">Notes</label>
+              <textarea
+                className="form-textarea"
+                value={form.notes}
+                onChange={(e) => handleChange('notes', e.target.value)}
+                placeholder="Free form notes for this task..."
+                rows={3}
+              />
+            </div>
+
             {/* Milestone */}
             <div className="form-checkbox-group" style={{ marginTop: '0.5rem' }}>
               <input
@@ -488,17 +500,6 @@ export default function TaskEditModal({
               </label>
             </div>
 
-            {/* Notes */}
-            <div className="form-group">
-              <label className="form-label">Notes</label>
-              <textarea
-                className="form-textarea"
-                value={form.notes}
-                onChange={(e) => handleChange('notes', e.target.value)}
-                placeholder="Additional notes…"
-                rows={3}
-              />
-            </div>
           </div>
 
           {/* Footer */}

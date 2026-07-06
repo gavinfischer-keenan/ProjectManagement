@@ -117,6 +117,12 @@ export default function CreateTaskModal({
             {error && <span className="form-error">{error}</span>}
           </div>
 
+          <div className="form-group" style={{ marginTop: '0.5rem' }}>
+            <label className="form-label">Notes</label>
+            <textarea className="form-textarea" placeholder="Free form notes for this task…" rows={3}
+              value={form.notes} onChange={(e) => handleChange('notes', e.target.value)} />
+          </div>
+
           <div className="form-group">
             <label className="form-label">
               {tab === 'section' ? 'Nest inside Section (optional)' : 'Parent Section (optional)'}
@@ -177,11 +183,7 @@ export default function CreateTaskModal({
             </div>
           )}
 
-          <div className="form-group">
-            <label className="form-label">Notes</label>
-            <textarea className="form-textarea" placeholder="Optional notes…" rows={3}
-              value={form.notes} onChange={(e) => handleChange('notes', e.target.value)} />
-          </div>
+
 
           <div className="modal-actions">
             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
