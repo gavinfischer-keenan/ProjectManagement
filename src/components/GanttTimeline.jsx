@@ -24,7 +24,7 @@ export default function GanttTimeline({ tasks, onClose, fullPage = false }) {
   }, [tasks]);
 
   const plottable = useMemo(
-    () => flatList.filter((t) => t.targetDateStart || t.targetDateFinish),
+    () => flatList.filter((t) => t.targetDateStart || t.targetDateFinish || t.dateStarted || t.dateFinished),
     [flatList]
   );
 
@@ -33,12 +33,11 @@ export default function GanttTimeline({ tasks, onClose, fullPage = false }) {
     let min = null;
     let max = null;
     for (const t of plottable) {
-      if (t.targetDateStart) {
-        const d = isoToDate(t.targetDateStart);
+      const dates = [t.targetDateStart, t.targetDateFinish, t.dateStarted, t.dateFinished]
+        .filter(Boolean)
+        .map(isoToDate);
+      for (const d of dates) {
         if (!min || d < min) min = d;
-      }
-      if (t.targetDateFinish) {
-        const d = isoToDate(t.targetDateFinish);
         if (!max || d > max) max = d;
       }
     }
@@ -76,6 +75,24 @@ export default function GanttTimeline({ tasks, onClose, fullPage = false }) {
     });
     cursor = new Date(cursor);
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+
+  // Build week markers (Mondays)
+  const weeks = [];
+  let wCursor = new Date(minDate);
+  while (wCursor.getUTCDay() !== 1) { // 1 = Monday
+    wCursor.setUTCDate(wCursor.getUTCDate() - 1);
+  }
+  while (wCursor.getTime() <= minDate.getTime() + totalDays * 86400000) {
+    const x = Math.round((wCursor - minDate) / 86400000) * DAY_WIDTH;
+    if (x >= 0) {
+      weeks.push({
+        label: wCursor.toLocaleString('default', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+        x,
+      });
+    }
+    wCursor = new Date(wCursor);
+    wCursor.setUTCDate(wCursor.getUTCDate() + 7);
   }
 
   const now = new Date();
@@ -121,16 +138,38 @@ export default function GanttTimeline({ tasks, onClose, fullPage = false }) {
             height={chartHeight + ROW_HEIGHT}
             style={{ display: 'block' }}
           >
-            {/* Month grid + labels */}
-            {months.map((m, i) => (
-              <g key={i}>
+            <defs>
+              <pattern id="ghost-hatch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,0.25)" strokeWidth="2" />
+              </pattern>
+            </defs>
+
+            {/* Week grid + labels */}
+            {weeks.map((w, i) => (
+              <g key={`w-${i}`}>
                 <line
-                  x1={m.x} y1={0} x2={m.x} y2={chartHeight + ROW_HEIGHT}
-                  stroke="rgba(255,255,255,0.08)" strokeWidth={1}
+                  x1={w.x} y1={ROW_HEIGHT} x2={w.x} y2={chartHeight + ROW_HEIGHT}
+                  stroke="rgba(255,255,255,0.04)" strokeWidth={1} strokeDasharray="2 2"
                 />
                 <text
-                  x={m.x + 4} y={ROW_HEIGHT - 6}
-                  fill="rgba(255,255,255,0.45)" fontSize={10} fontFamily="Inter,sans-serif"
+                  x={w.x + 4} y={ROW_HEIGHT - 6}
+                  fill="rgba(255,255,255,0.25)" fontSize={8} fontFamily="Inter,sans-serif"
+                >
+                  {w.label}
+                </text>
+              </g>
+            ))}
+
+            {/* Month grid + labels */}
+            {months.map((m, i) => (
+              <g key={`m-${i}`}>
+                <line
+                  x1={m.x} y1={0} x2={m.x} y2={chartHeight + ROW_HEIGHT}
+                  stroke="rgba(255,255,255,0.12)" strokeWidth={1}
+                />
+                <text
+                  x={m.x + 4} y={ROW_HEIGHT - 16}
+                  fill="rgba(255,255,255,0.6)" fontSize={10} fontFamily="Inter,sans-serif" fontWeight={600}
                 >
                   {m.label}
                 </text>
@@ -156,43 +195,70 @@ export default function GanttTimeline({ tasks, onClose, fullPage = false }) {
             {/* Task bars */}
             {plottable.map((t, i) => {
               const y = ROW_HEIGHT + i * ROW_HEIGHT;
-              const startDate = t.targetDateStart ? isoToDate(t.targetDateStart) : null;
-              const finishDate = t.targetDateFinish ? isoToDate(t.targetDateFinish) : null;
+              const plannedStart = t.targetDateStart ? isoToDate(t.targetDateStart) : null;
+              const plannedFinish = t.targetDateFinish ? isoToDate(t.targetDateFinish) : null;
+              const actualStart = t.dateStarted ? isoToDate(t.dateStarted) : null;
+              const actualFinish = t.dateFinished ? isoToDate(t.dateFinished) : null;
 
-              let barX = 0;
-              let barWidth = 0;
-              if (startDate && finishDate) {
-                barX = Math.round((startDate - minDate) / 86400000) * DAY_WIDTH;
-                barWidth = Math.max(4, Math.round((finishDate - startDate) / 86400000) * DAY_WIDTH);
-              } else if (startDate) {
-                barX = Math.round((startDate - minDate) / 86400000) * DAY_WIDTH;
-                barWidth = DAY_WIDTH * 3;
-              } else if (finishDate) {
-                barX = Math.round((finishDate - minDate) / 86400000) * DAY_WIDTH - DAY_WIDTH * 3;
-                barWidth = DAY_WIDTH * 3;
+              const getRect = (start, finish) => {
+                let bx = 0; let bw = 0;
+                if (start && finish) {
+                  bx = Math.round((start - minDate) / 86400000) * DAY_WIDTH;
+                  bw = Math.max(4, Math.round((finish - start) / 86400000) * DAY_WIDTH);
+                } else if (start) {
+                  bx = Math.round((start - minDate) / 86400000) * DAY_WIDTH;
+                  bw = DAY_WIDTH * 3;
+                } else if (finish) {
+                  bx = Math.round((finish - minDate) / 86400000) * DAY_WIDTH - DAY_WIDTH * 3;
+                  bw = DAY_WIDTH * 3;
+                }
+                return { x: bx, width: bw };
+              };
+
+              const plannedRect = getRect(plannedStart, plannedFinish);
+
+              const solidStart = actualStart || plannedStart;
+              let solidFinish = actualFinish;
+              if (!solidFinish && actualStart && t.status !== 'Completed') {
+                const todayD = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+                const fallbackEnd = plannedFinish || todayD;
+                solidFinish = new Date(Math.max(todayD.getTime(), fallbackEnd.getTime()));
               }
+              if (!solidFinish) solidFinish = plannedFinish;
 
+              const actualRect = getRect(solidStart, solidFinish);
+              
               const pct = Math.max(0, Math.min(100, t.percentComplete || 0));
-              const progressWidth = Math.round(barWidth * pct / 100);
+              const progressWidth = Math.round(actualRect.width * pct / 100);
               const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-              const isLate = finishDate && finishDate.getTime() < todayUTC && !t.dateFinished;
+              const isLate = plannedFinish && plannedFinish.getTime() < todayUTC && !t.dateFinished;
 
               let barColor = 'rgba(100,116,139,0.55)';
               if (t.status === 'Completed') barColor = 'rgba(16,185,129,0.85)';
               else if (isLate) barColor = 'rgba(239,68,68,0.75)';
               else if (t.status === 'In Progress') barColor = 'rgba(59,130,246,0.75)';
 
+              const hasActual = !!t.dateStarted;
+
               return (
                 <g key={t.id}>
                   {i % 2 === 1 && (
                     <rect x={0} y={y} width={chartWidth} height={ROW_HEIGHT} fill="rgba(255,255,255,0.02)" />
                   )}
-                  {barWidth > 0 && (
+                  
+                  {hasActual && plannedRect.width > 0 && (
                     <>
-                      <rect x={barX} y={y + 5} width={barWidth} height={ROW_HEIGHT - 10} rx={3} fill="rgba(255,255,255,0.06)" />
-                      <rect x={barX} y={y + 5} width={barWidth} height={ROW_HEIGHT - 10} rx={3} fill={barColor} />
+                      <rect x={plannedRect.x} y={y + 5} width={plannedRect.width} height={ROW_HEIGHT - 10} rx={3} fill={barColor} fillOpacity={0.2} />
+                      <rect x={plannedRect.x} y={y + 5} width={plannedRect.width} height={ROW_HEIGHT - 10} rx={3} fill="url(#ghost-hatch)" />
+                    </>
+                  )}
+
+                  {actualRect.width > 0 && (
+                    <>
+                      {!hasActual && <rect x={actualRect.x} y={y + 5} width={actualRect.width} height={ROW_HEIGHT - 10} rx={3} fill="rgba(255,255,255,0.06)" />}
+                      <rect x={actualRect.x} y={y + 5} width={actualRect.width} height={ROW_HEIGHT - 10} rx={3} fill={barColor} />
                       {pct > 0 && pct < 100 && (
-                        <rect x={barX} y={y + 5} width={progressWidth} height={ROW_HEIGHT - 10} rx={3} fill="rgba(16,185,129,0.9)" />
+                        <rect x={actualRect.x} y={y + 5} width={progressWidth} height={ROW_HEIGHT - 10} rx={3} fill="rgba(16,185,129,0.9)" />
                       )}
                     </>
                   )}
