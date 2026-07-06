@@ -2,7 +2,7 @@
    Color Utilities — Hawaii Project Manager
    ═══════════════════════════════════════════════════════════════ */
 
-import { isLate, isDueSoon, isBeforeTarget } from './dateUtils.js';
+import { isBeforeTarget } from './dateUtils.js';
 
 /**
  * Return the CSS class name for a task row based on its status.
@@ -27,11 +27,11 @@ export function getRowClass(task) {
     daysRemaining = (target.getTime() - todayUTC) / 86400000;
   }
 
-  const isLate = daysRemaining !== null && daysRemaining < 0;
+  const isOverdue = daysRemaining !== null && daysRemaining < 0;
   const inProgress = task.status === 'In Progress' || task.percentComplete > 0;
 
   // RED MEANS LATE whether started or not
-  if (isLate) {
+  if (isOverdue) {
     return 'row-border-red';
   }
 

@@ -7,7 +7,6 @@ import { getRowClass, getDateCellClass } from '../utils/colorUtils.js';
 import { formatDate } from '../utils/dateUtils.js';
 import { calculateRollup, canStartTask } from '../utils/treeUtils.js';
 import PercentCell from './PercentCell.jsx';
-import GanttBar from './GanttBar.jsx';
 
 export default function TaskRow({
   task,

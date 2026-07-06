@@ -60,20 +60,28 @@ export function flattenTree(tree, depth = 0) {
 /**
  * Calculate dependency depth for a flattened array of tasks.
  * If A->B->C, A is depDepth 0, B is 1, C is 2.
+ * Uses memoization so each chain is traversed at most once (O(n) total).
  */
 export function applyDependencyDepths(flatTasks) {
   const taskMap = new Map();
   flatTasks.forEach(t => taskMap.set(t.id, t));
+  const cache = new Map();
 
   const getDepDepth = (taskId, visited = new Set()) => {
     if (!taskId) return 0;
+    if (cache.has(taskId)) return cache.get(taskId);
     if (visited.has(taskId)) return 0; // circular dependency protection
     visited.add(taskId);
 
     const task = taskMap.get(taskId);
-    if (!task || !task.dependsOnTaskId) return 0;
+    if (!task || !task.dependsOnTaskId) {
+      cache.set(taskId, 0);
+      return 0;
+    }
 
-    return 1 + getDepDepth(task.dependsOnTaskId, visited);
+    const depth = 1 + getDepDepth(task.dependsOnTaskId, visited);
+    cache.set(taskId, depth);
+    return depth;
   };
 
   return flatTasks.map(task => ({

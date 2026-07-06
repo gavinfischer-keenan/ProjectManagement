@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { today, formatDate, isoToDate } from '../utils/dateUtils.js';
+import { today, formatDate, isDueSoon } from '../utils/dateUtils.js';
+import { updateTask } from '../api/client.js';
 import TaskEditModal from './TaskEditModal.jsx';
 
 export default function DailyTaskList({ tasks = [], onTaskUpdate, onShowMaintenancePrompt }) {
@@ -24,40 +25,54 @@ export default function DailyTaskList({ tasks = [], onTaskUpdate, onShowMaintena
     [tasks]
   );
 
+  /* Check if a task is blocked by an incomplete dependency */
+  const getBlocker = useCallback(
+    (task) => {
+      if (!task.dependsOnTaskId) return null;
+      const dep = tasks.find((t) => t.id === task.dependsOnTaskId);
+      if (!dep || dep.status === 'Completed' || dep.dateFinished) return null;
+      return dep; // returns the blocking task object
+    },
+    [tasks]
+  );
+
   /* Categorize */
   const { delayed, sections } = useMemo(() => {
     const delayed = [];
     const sectionMap = new Map();
 
     for (const t of leafTasks) {
-      if (t.status === 'Completed') continue; 
+      if (t.status === 'Completed') continue;
 
       const isDelayed = !!t.delayed;
       const isInProgress = t.status === 'In Progress';
-      
-      let isUrgent = false;
-      if (t.status === 'Not Started' && t.targetDateFinish) {
-        const target = isoToDate(t.targetDateFinish);
-        if (target) {
-          const now = new Date();
-          const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-          const diff = target.getTime() - todayUTC;
-          const days = diff / 86400000;
-          if (days <= 5) isUrgent = true;
-        }
-      }
+      const blocker = getBlocker(t);
+      const isBlocked = !!blocker;
+
+      // Urgency: Not Started and due within 5 days (regardless of blocked status)
+      const isUrgent = t.status === 'Not Started' && isDueSoon(t.targetDateFinish, t.dateFinished, 5);
+      // Critical: blocked AND due within 3 days — surface even though blocked
+      const isCriticalBlocked = isBlocked && isDueSoon(t.targetDateFinish, t.dateFinished, 3);
+
+      // Blocked tasks only appear if critically close to due date
+      if (isBlocked && !isCriticalBlocked) continue;
 
       if (isDelayed) {
         delayed.push(t);
-      } else if (isInProgress || isUrgent) {
+      } else if (isInProgress || isUrgent || isCriticalBlocked) {
         const secName = getSectionName(t.id);
         if (!sectionMap.has(secName)) sectionMap.set(secName, []);
-        sectionMap.get(secName).push({ ...t, _isUrgent: isUrgent });
+        sectionMap.get(secName).push({
+          ...t,
+          _isUrgent: isUrgent,
+          _isBlocked: isBlocked,
+          _blockedBy: blocker?.name || null,
+        });
       }
     }
 
     const sectionEntries = Array.from(sectionMap.entries()).map(([name, items]) => {
-      // sort items: in progress first, then by date
+      // Sort: in progress first, then by date
       items.sort((a, b) => {
         if (a.status === 'In Progress' && b.status !== 'In Progress') return -1;
         if (b.status === 'In Progress' && a.status !== 'In Progress') return 1;
@@ -65,12 +80,13 @@ export default function DailyTaskList({ tasks = [], onTaskUpdate, onShowMaintena
       });
       return { name, items };
     });
-    
+
     // Sort sections alphabetically
     sectionEntries.sort((a, b) => a.name.localeCompare(b.name));
 
     return { delayed, sections: sectionEntries };
-  }, [leafTasks, getSectionName]);
+  }, [leafTasks, getSectionName, getBlocker]);
+
 
   const isEmpty = delayed.length === 0 && sections.length === 0;
 
@@ -79,12 +95,20 @@ export default function DailyTaskList({ tasks = [], onTaskUpdate, onShowMaintena
     if (original) setEditingTask(original);
   };
 
-  const handleSaveEdit = async (updatedData) => {
-    if (onTaskUpdate) {
-      await onTaskUpdate(updatedData); // Note: App.jsx handleDailyTaskUpdate expects (updatedTask)
+  const handleSaveEdit = useCallback(async (formData) => {
+    if (!editingTask) return;
+    try {
+      const saved = await updateTask(editingTask.id, {
+        ...formData,
+        duration: formData.duration !== '' ? Number(formData.duration) : null,
+        percentComplete: Number(formData.percentComplete),
+      });
+      if (onTaskUpdate) onTaskUpdate(saved);
+    } catch (err) {
+      console.error('Failed to save task from daily view:', err);
     }
     setEditingTask(null);
-  };
+  }, [editingTask, onTaskUpdate]);
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -138,13 +162,32 @@ export default function DailyTaskList({ tasks = [], onTaskUpdate, onShowMaintena
               </div>
               <div className="task-list-rows" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {sec.items.map(t => (
-                  <div key={t.id} className="task-row-item glass-panel-sm" onClick={() => handleRowClick(t)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', transition: 'background 0.2s' }}>
+                  <div
+                    key={t.id}
+                    className="task-row-item glass-panel-sm"
+                    onClick={() => handleRowClick(t)}
+                    style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', transition: 'background 0.2s', borderLeft: t._isBlocked ? '3px solid var(--accent-coral)' : undefined }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      {t._isUrgent && <span style={{ color: 'var(--accent-coral)', fontSize: '1.1rem' }} title="Due within 5 days">⭐️</span>}
-                      {t.status === 'In Progress' && <span style={{ color: 'var(--accent-blue)', fontSize: '1.1rem' }} title="In Progress">▶</span>}
-                      <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{t.name}</span>
+                      {t._isUrgent && !t._isBlocked && (
+                        <span style={{ color: 'var(--accent-coral)', fontSize: '1.1rem' }} title="Due within 5 days">⭐️</span>
+                      )}
+                      {t._isBlocked && (
+                        <span style={{ color: 'var(--accent-coral)', fontSize: '1rem' }} title={`Blocked by: ${t._blockedBy}`}>🔒</span>
+                      )}
+                      {t.status === 'In Progress' && (
+                        <span style={{ color: 'var(--accent-blue)', fontSize: '1.1rem' }} title="In Progress">▶</span>
+                      )}
+                      <div>
+                        <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{t.name}</span>
+                        {t._isBlocked && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--accent-coral)', marginTop: '0.1rem' }}>
+                            Blocked by: {t._blockedBy}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                       {t.targetDateFinish ? `Due ${formatDate(t.targetDateFinish)}` : ''}
                     </div>
                   </div>
