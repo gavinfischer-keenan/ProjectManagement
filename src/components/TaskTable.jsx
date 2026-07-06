@@ -33,8 +33,8 @@ export default function TaskTable({
   const [createModal, setCreateModal] = useState(null); // { defaultType, defaultParentId } | null
 
   /* ── Tree ───────────────────────────────────────────────── */
-  const tree = useMemo(() => buildTree(tasks), [tasks]);
-  const flatList = useMemo(() => applyDependencyDepths(flattenTree(tree)), [tree]);
+  const tree = useMemo(() => buildTree(applyDependencyDepths(tasks)), [tasks]);
+  const flatList = useMemo(() => flattenTree(tree), [tree]);
 
   // Initialize expanded IDs when tasks change (add any new parent IDs)
   useMemo(() => {

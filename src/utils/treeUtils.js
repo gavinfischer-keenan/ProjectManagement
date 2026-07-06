@@ -28,9 +28,14 @@ export function buildTree(flatTasks) {
     }
   }
 
-  // Sort children at every level by `order`
+  // Sort children at every level by `depDepth` first, then by `order`
   const sortChildren = (nodes) => {
-    nodes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    nodes.sort((a, b) => {
+      const aDep = a.depDepth ?? 0;
+      const bDep = b.depDepth ?? 0;
+      if (aDep !== bDep) return aDep - bDep;
+      return (a.order ?? 0) - (b.order ?? 0);
+    });
     for (const node of nodes) {
       if (node.children.length > 0) {
         sortChildren(node.children);

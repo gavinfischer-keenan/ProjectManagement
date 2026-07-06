@@ -1,6 +1,6 @@
 /* GanttTimeline — Scrollable Gantt Chart — Hawaii Project Manager */
 import React, { useMemo, useRef } from 'react';
-import { buildTree, flattenTree } from '../utils/treeUtils.js';
+import { buildTree, flattenTree, applyDependencyDepths } from '../utils/treeUtils.js';
 import { isoToDate } from '../utils/dateUtils.js';
 
 const ROW_HEIGHT = 28;
@@ -17,8 +17,10 @@ export default function GanttTimeline({ tasks, onClose, fullPage = false }) {
   const containerRef = useRef(null);
 
   const flatList = useMemo(() => {
-    const tree = buildTree(tasks);
-    return flattenTree(tree);
+    // 1. Calculate depths
+    // 2. Build Tree (which now sorts by depth then order)
+    // 3. Flatten
+    return flattenTree(buildTree(applyDependencyDepths(tasks)));
   }, [tasks]);
 
   const plottable = useMemo(
