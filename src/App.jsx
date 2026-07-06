@@ -148,6 +148,41 @@ export default function App() {
     await refreshTasks();
   }, [refreshTasks]);
 
+  /* ── Milestone Complete ─────────────────────────────────── */
+  const handleMilestoneComplete = useCallback(async (task, milestoneText, allTasks) => {
+    // Walk up parent chain to find the top-level section name
+    const getSectionName = (t, tList) => {
+      if (!t) return '';
+      if (!t.parentId) return t.name; // it IS the section
+      const parent = tList.find(p => p.id === t.parentId);
+      return getSectionName(parent, tList);
+    };
+    const sectionName = getSectionName(task, allTasks);
+    const sectionTask = allTasks.find(t => !t.parentId && t.name === sectionName);
+
+    const todayISO = (() => {
+      const n = new Date();
+      return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+    })();
+
+    try {
+      const created = await createMaintenance({
+        description: milestoneText || `Milestone: ${task.name}`,
+        isMilestone: true,
+        milestoneText: milestoneText || task.name,
+        sectionName: sectionName || '',
+        sectionId: sectionTask?.id || null,
+        taskId: task.id,
+        dateOfRepair: todayISO,
+        dateWhenFixed: todayISO,
+        notes: `Auto-logged when task "${task.name}" was marked complete.`,
+      });
+      setMaintenanceEntries(prev => [...prev, created]);
+    } catch (err) {
+      console.error('Failed to log milestone:', err);
+    }
+  }, []);
+
   /* ── View Rendering ─────────────────────────────────────── */
   const renderContent = () => {
     if (loading) {
@@ -170,6 +205,7 @@ export default function App() {
             onTaskCreate={handleTaskCreate}
             onShowMaintenancePrompt={handleShowMaintenancePrompt}
             onTasksRefresh={refreshTasks}
+            onMilestoneComplete={handleMilestoneComplete}
           />
         );
 

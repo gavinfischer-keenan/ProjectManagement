@@ -148,6 +148,8 @@ router.post('/', (req, res) => {
       status: req.body.status ?? 'Not Started',
       delayed: req.body.delayed ?? false,
       percentComplete: req.body.percentComplete ?? 0,
+      isMilestone: req.body.isMilestone ?? false,
+      milestoneText: req.body.milestoneText ?? '',
     };
 
     tasks.push(newTask);
@@ -180,6 +182,7 @@ router.put('/:id', (req, res) => {
       'parentId', 'order', 'name', 'taskType', 'dependency', 'dependsOnTaskId',
       'notes', 'targetDateStart', 'targetDateFinish', 'dateStarted',
       'dateFinished', 'duration', 'status', 'delayed', 'percentComplete',
+      'isMilestone', 'milestoneText',
     ];
 
     for (const field of updatable) {

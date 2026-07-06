@@ -30,6 +30,8 @@ export default function TaskEditModal({
     status:           task.status || 'Not Started',
     delayed:          task.delayed || false,
     percentComplete:  task.percentComplete ?? 0,
+    isMilestone:      task.isMilestone || false,
+    milestoneText:    task.milestoneText || '',
   });
 
   const prevDateFinished = useRef(task.dateFinished || '');
@@ -440,6 +442,36 @@ export default function TaskEditModal({
                 />
               )}
             </div>
+
+            {/* Milestone */}
+            <div className="form-checkbox-group" style={{ marginTop: '0.5rem' }}>
+              <input
+                className="form-checkbox"
+                type="checkbox"
+                id="isMilestone"
+                checked={form.isMilestone}
+                onChange={(e) => handleChange('isMilestone', e.target.checked)}
+              />
+              <label htmlFor="isMilestone" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal', color: 'var(--accent-gold, #f5c842)' }}>
+                🏆 This task is a Project Milestone
+              </label>
+            </div>
+
+            {form.isMilestone && (
+              <div className="form-group fade-in-up" style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(245,200,66,0.08)', border: '1px solid rgba(245,200,66,0.3)', borderRadius: '8px' }}>
+                <label className="form-label" style={{ color: 'var(--accent-gold, #f5c842)' }}>
+                  🏆 Milestone Achievement Text
+                </label>
+                <input
+                  className="form-input"
+                  type="text"
+                  value={form.milestoneText}
+                  onChange={(e) => handleChange('milestoneText', e.target.value)}
+                  placeholder='e.g. "AC Pads ready for Units"'
+                />
+                <span className="form-help">This text will be logged to the Maintenance Log when the task is completed.</span>
+              </div>
+            )}
 
             {/* Delayed Checkbox */}
             <div className="form-checkbox-group">
