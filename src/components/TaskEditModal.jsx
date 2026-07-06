@@ -33,6 +33,8 @@ export default function TaskEditModal({
     percentComplete:  task.percentComplete ?? 0,
     isMilestone:      task.isMilestone || false,
     milestoneText:    task.milestoneText || '',
+    isHardware:       task.isHardware || false,
+    hardwareText:     task.hardwareText || '',
   });
 
   const prevDateFinished = useRef(task.dateFinished || '');

@@ -43,10 +43,12 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
     const manual = entries.map(e => ({ ...e, isDerived: false }));
 
     // 2. Map derived entries from completed tasks
-    const getSectionName = (parentId) => {
-      if (!parentId) return '';
-      const parent = tasks.find(t => t.id === parentId);
-      return parent ? parent.name : '';
+    const getSectionName = (taskId) => {
+      if (!taskId) return '';
+      const t = tasks.find(x => x.id === taskId);
+      if (!t) return '';
+      if (!t.parentId) return t.name;
+      return getSectionName(t.parentId);
     };
 
     const derived = tasks
@@ -62,8 +64,8 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
         notes: t.notes || '',
         isMilestone: !!t.isMilestone,
         milestoneText: t.milestoneText || '',
-        sectionName: t.parentId ? getSectionName(t.parentId) : '',
-        sectionId: t.parentId,
+        sectionName: getSectionName(t.id),
+        sectionId: t.parentId || '',
         isDerived: true // indicates it's read-only in the log!
       }));
 
