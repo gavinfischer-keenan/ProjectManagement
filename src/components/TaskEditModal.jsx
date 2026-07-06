@@ -44,6 +44,9 @@ export default function TaskEditModal({
   const [prereqSaving, setPrereqSaving]       = useState(false);
   const [prereqError, setPrereqError]         = useState('');
   const prereqNameRef = useRef(null);
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState('general');
 
   useEffect(() => {
     if (showPrereqPanel && prereqNameRef.current) prereqNameRef.current.focus();
@@ -203,63 +206,127 @@ export default function TaskEditModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
+          {/* Tabs */}
+          <div className="create-modal-tabs" style={{ padding: '0 1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
+            <button type="button" className={`create-tab-btn ${activeTab === 'general' ? 'active' : ''}`} onClick={() => setActiveTab('general')}>📝 General</button>
+            <button type="button" className={`create-tab-btn ${activeTab === 'dependencies' ? 'active' : ''}`} onClick={() => setActiveTab('dependencies')}>⛓ Dependencies</button>
+            <button type="button" className={`create-tab-btn ${activeTab === 'log' ? 'active' : ''}`} onClick={() => setActiveTab('log')}>📋 Log & Hardware</button>
+          </div>
+
           <div className="modal-body">
-            {/* Task Name */}
-            <div className="form-group">
-              <label className="form-label">Task Name</label>
-              <input
-                className="form-input"
-                type="text"
-                value={form.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Enter task name"
-                required
-              />
-            </div>
+            {activeTab === 'general' && (
+              <>
+                {/* Task Name */}
+                <div className="form-group">
+                  <label className="form-label">Task Name</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    placeholder="Enter task name"
+                    required
+                  />
+                </div>
 
-            {/* Notes */}
-            <div className="form-group" style={{ marginTop: '0.5rem' }}>
-              <label className="form-label">Notes</label>
-              <textarea
-                className="form-textarea"
-                value={form.notes}
-                onChange={(e) => handleChange('notes', e.target.value)}
-                placeholder="Free form notes for this task..."
-                rows={3}
-              />
-            </div>
+                {/* Date Row 1 */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Target Start</label>
+                    <input className="form-input" type="date" value={form.targetDateStart} onChange={(e) => handleChange('targetDateStart', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Target Finish</label>
+                    <input className="form-input" type="date" value={form.targetDateFinish} onChange={(e) => handleChange('targetDateFinish', e.target.value)} />
+                  </div>
+                </div>
 
-            {/* Milestone */}
-            <div className="form-checkbox-group" style={{ marginTop: '0.5rem' }}>
-              <input
-                className="form-checkbox"
-                type="checkbox"
-                id="isMilestone"
-                checked={form.isMilestone}
-                onChange={(e) => handleChange('isMilestone', e.target.checked)}
-              />
-              <label htmlFor="isMilestone" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal', color: 'var(--accent-gold, #f5c842)' }}>
-                🏆 This task is a Project Milestone
-              </label>
-            </div>
+                {/* Date Row 2 */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Date Started</label>
+                    <input className="form-input" type="date" value={form.dateStarted} onChange={(e) => handleChange('dateStarted', e.target.value)} disabled={!blockInfo.canStart} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Date Finished</label>
+                    <input className="form-input" type="date" value={form.dateFinished} onChange={(e) => handleDateFinishedChange(e.target.value)} />
+                  </div>
+                </div>
 
-            {form.isMilestone && (
-              <div className="form-group fade-in-up" style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(245,200,66,0.08)', border: '1px solid rgba(245,200,66,0.3)', borderRadius: '8px' }}>
-                <label className="form-label" style={{ color: 'var(--accent-gold, #f5c842)' }}>
-                  🏆 Milestone Achievement Text
-                </label>
-                <input
-                  className="form-input"
-                  type="text"
-                  value={form.milestoneText}
-                  onChange={(e) => handleChange('milestoneText', e.target.value)}
-                  placeholder='e.g. "AC Pads ready for Units"'
-                />
-                <span className="form-help">This text will be logged to the Maintenance Log when the task is completed.</span>
-              </div>
+                {/* Duration & Status */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Duration (days)</label>
+                    <input className="form-input" type="number" min="0" value={form.duration} onChange={(e) => handleChange('duration', e.target.value)} placeholder="0" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Status</label>
+                    <select className="form-select" value={isParent ? rollup.status : form.status} onChange={(e) => handleStatusChange(e.target.value)} disabled={isParent}>
+                      <option value="Not Started">Not Started</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Blocked">Blocked</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Percent Complete */}
+                <div className="form-group">
+                  <label className="form-label">Percent Complete: {isParent ? rollup.percentComplete : form.percentComplete}%</label>
+                  {isParent ? (
+                    <><progress value={rollup.percentComplete} max="100" style={{ width: '100%', height: '12px' }} /><span className="form-help">Calculated automatically from sub-tasks.</span></>
+                  ) : (
+                    <input type="range" min="0" max="100" step="5" value={form.percentComplete} onChange={(e) => handlePercentChange(e.target.value)} />
+                  )}
+                </div>
+
+                {/* Delayed Checkbox */}
+                <div className="form-checkbox-group">
+                  <input className="form-checkbox" type="checkbox" id="delayed" checked={form.delayed} onChange={(e) => handleChange('delayed', e.target.checked)} />
+                  <label htmlFor="delayed" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal' }}>Mark as Delayed</label>
+                </div>
+              </>
             )}
 
-            {/* Dependency Row */}
+            {activeTab === 'log' && (
+              <>
+                {/* Milestone */}
+                <div className="form-checkbox-group" style={{ marginTop: '0.5rem' }}>
+                  <input className="form-checkbox" type="checkbox" id="isMilestone" checked={form.isMilestone} onChange={(e) => handleChange('isMilestone', e.target.checked)} />
+                  <label htmlFor="isMilestone" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal', color: 'var(--accent-gold, #f5c842)' }}>🏆 This task is a Project Milestone</label>
+                </div>
+                {form.isMilestone && (
+                  <div className="form-group fade-in-up" style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(245,200,66,0.08)', border: '1px solid rgba(245,200,66,0.3)', borderRadius: '8px' }}>
+                    <label className="form-label" style={{ color: 'var(--accent-gold, #f5c842)' }}>🏆 Milestone Achievement Text</label>
+                    <input className="form-input" type="text" value={form.milestoneText} onChange={(e) => handleChange('milestoneText', e.target.value)} placeholder='e.g. "AC Pads ready for Units"' />
+                    <span className="form-help">Automatically added to the Maintenance Log when completed.</span>
+                  </div>
+                )}
+
+                {/* Hardware */}
+                <div className="form-checkbox-group" style={{ marginTop: '1.5rem' }}>
+                  <input className="form-checkbox" type="checkbox" id="isHardware" checked={form.isHardware} onChange={(e) => handleChange('isHardware', e.target.checked)} />
+                  <label htmlFor="isHardware" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal', color: 'var(--accent-teal, #2dd4bf)' }}>🔧 New Hardware Installation</label>
+                </div>
+                {form.isHardware && (
+                  <div className="form-group fade-in-up" style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: '8px' }}>
+                    <label className="form-label" style={{ color: 'var(--accent-teal, #2dd4bf)' }}>🔧 Hardware Details (Model / Serial)</label>
+                    <input className="form-input" type="text" value={form.hardwareText} onChange={(e) => handleChange('hardwareText', e.target.value)} placeholder='e.g. "New Ceiling fan model xXXX"' />
+                    <span className="form-help">Automatically added to the Maintenance Log when completed.</span>
+                  </div>
+                )}
+
+                {/* Notes */}
+                <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                  <label className="form-label">Notes</label>
+                  <textarea className="form-textarea" value={form.notes} onChange={(e) => handleChange('notes', e.target.value)} placeholder="Free form notes for this task..." rows={6} />
+                </div>
+              </>
+            )}
+
+            {activeTab === 'dependencies' && (
+              <>
+
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Dependency Label</label>
@@ -384,121 +451,8 @@ export default function TaskEditModal({
               </div>
             )}
 
-            {/* Date Row 1 */}
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Target Start</label>
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.targetDateStart}
-                  onChange={(e) => handleChange('targetDateStart', e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Target Finish</label>
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.targetDateFinish}
-                  onChange={(e) => handleChange('targetDateFinish', e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Date Row 2 */}
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Date Started</label>
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.dateStarted}
-                  onChange={(e) => handleChange('dateStarted', e.target.value)}
-                  disabled={!blockInfo.canStart}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Date Finished</label>
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.dateFinished}
-                  onChange={(e) => handleDateFinishedChange(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Duration & Status */}
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Duration (days)</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  min="0"
-                  value={form.duration}
-                  onChange={(e) => handleChange('duration', e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Status</label>
-                <select
-                  className="form-select"
-                  value={isParent ? rollup.status : form.status}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  disabled={isParent}
-                >
-                  <option value="Not Started">Not Started</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Blocked">Blocked</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Percent Complete */}
-            <div className="form-group">
-              <label className="form-label">
-                Percent Complete: {isParent ? rollup.percentComplete : form.percentComplete}%
-              </label>
-              {isParent ? (
-                <>
-                  <progress 
-                    value={rollup.percentComplete} 
-                    max="100" 
-                    style={{ width: '100%', height: '12px' }}
-                  />
-                  <span className="form-help">Status and progress are calculated automatically from sub-tasks.</span>
-                </>
-              ) : (
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="5"
-                  value={form.percentComplete}
-                  onChange={(e) => handlePercentChange(e.target.value)}
-                />
-              )}
-            </div>
-
-
-            {/* Delayed Checkbox */}
-            <div className="form-checkbox-group">
-              <input
-                className="form-checkbox"
-                type="checkbox"
-                id="delayed"
-                checked={form.delayed}
-                onChange={(e) => handleChange('delayed', e.target.checked)}
-              />
-              <label htmlFor="delayed" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-                Mark as Delayed
-              </label>
-            </div>
-
+              </>
+            )}
           </div>
 
           {/* Footer */}

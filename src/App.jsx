@@ -9,7 +9,6 @@ import SummaryDashboard from './components/SummaryDashboard.jsx';
 import DailyTaskList from './components/DailyTaskList.jsx';
 import CompletedView from './components/CompletedView.jsx';
 import MaintenanceLog from './components/MaintenanceLog.jsx';
-import MaintenancePrompt from './components/MaintenancePrompt.jsx';
 import ImportWizard from './components/ImportWizard.jsx';
 import GanttTimeline from './components/GanttTimeline.jsx';
 import {
@@ -33,10 +32,6 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [maintenanceEntries, setMaintenanceEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  /* ── Maintenance Prompt Modal State ─────────────────────── */
-  const [promptOpen, setPromptOpen] = useState(false);
-  const [promptTask, setPromptTask] = useState(null);
 
   /* ── Data Loading ───────────────────────────────────────── */
   const refreshTasks = useCallback(async () => {
@@ -102,28 +97,6 @@ export default function App() {
       console.error('Failed to create task:', err);
       return null;
     }
-  }, []);
-
-  /* ── Maintenance Prompt ────────────────────────────────── */
-  const handleShowMaintenancePrompt = useCallback((task) => {
-    setPromptTask(task);
-    setPromptOpen(true);
-  }, []);
-
-  const handleMaintenanceSubmit = useCallback(async (entry) => {
-    try {
-      const created = await createMaintenance(entry);
-      setMaintenanceEntries((prev) => [...prev, created]);
-    } catch (err) {
-      console.error('Failed to add maintenance entry:', err);
-    }
-    setPromptOpen(false);
-    setPromptTask(null);
-  }, []);
-
-  const handleMaintenanceSkip = useCallback(() => {
-    setPromptOpen(false);
-    setPromptTask(null);
   }, []);
 
   /* ── Maintenance CRUD ──────────────────────────────────── */
@@ -204,7 +177,6 @@ export default function App() {
             onTaskUpdate={handleTaskUpdate}
             onTaskDelete={handleTaskDelete}
             onTaskCreate={handleTaskCreate}
-            onShowMaintenancePrompt={handleShowMaintenancePrompt}
             onTasksRefresh={refreshTasks}
             onMilestoneComplete={handleMilestoneComplete}
           />
@@ -223,7 +195,6 @@ export default function App() {
           <DailyTaskList
             tasks={tasks}
             onTaskUpdate={handleDailyTaskUpdate}
-            onShowMaintenancePrompt={handleShowMaintenancePrompt}
           />
         );
 
@@ -260,14 +231,6 @@ export default function App() {
   return (
     <Layout currentView={currentView} onNavigate={setCurrentView} tasks={tasks} maintenanceEntries={maintenanceEntries}>
       {renderContent()}
-
-      {/* Global: Maintenance Prompt Modal */}
-      <MaintenancePrompt
-        isOpen={promptOpen}
-        task={promptTask}
-        onSubmit={handleMaintenanceSubmit}
-        onSkip={handleMaintenanceSkip}
-      />
     </Layout>
   );
 }

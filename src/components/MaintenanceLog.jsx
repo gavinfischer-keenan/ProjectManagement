@@ -38,10 +38,39 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
   );
 
   /* Sort entries newest first */
-  const sorted = useMemo(
-    () => [...entries].sort((a, b) => (b.dateOfRepair || '').localeCompare(a.dateOfRepair || '')),
-    [entries]
-  );
+  const sorted = useMemo(() => {
+    // 1. Map manual entries (from maintenance.json)
+    const manual = entries.map(e => ({ ...e, isDerived: false }));
+
+    // 2. Map derived entries from completed tasks
+    const getSectionName = (parentId) => {
+      if (!parentId) return '';
+      const parent = tasks.find(t => t.id === parentId);
+      return parent ? parent.name : '';
+    };
+
+    const derived = tasks
+      .filter(t => t.status === 'Completed' && (t.isMilestone || t.isHardware))
+      .map(t => ({
+        id: `derived-${t.id}`,
+        description: t.isHardware ? (t.hardwareText || `Hardware installed for ${t.name}`) : (t.milestoneText || `Milestone achieved: ${t.name}`),
+        taskId: t.id,
+        dateOfRepair: t.dateFinished || t.targetDateFinish || today(),
+        dateWhenFixed: t.dateFinished || t.targetDateFinish || today(),
+        newInstallation: !!t.isHardware,
+        newInstallationDate: t.isHardware ? (t.dateFinished || t.targetDateFinish || today()) : '',
+        notes: t.notes || '',
+        isMilestone: !!t.isMilestone,
+        milestoneText: t.milestoneText || '',
+        sectionName: t.parentId ? getSectionName(t.parentId) : '',
+        sectionId: t.parentId,
+        isDerived: true // indicates it's read-only in the log!
+      }));
+
+    // 3. Combine and sort
+    const all = [...manual, ...derived];
+    return all.sort((a, b) => (b.dateOfRepair || '').localeCompare(a.dateOfRepair || ''));
+  }, [entries, tasks]);
 
   /* Group entries by section */
   const sections = useMemo(() => {
@@ -297,8 +326,14 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
-                            <button className="btn btn--ghost btn--sm" onClick={() => openEdit(m)}>✏️</button>
-                            <button className="btn btn--danger btn--sm" onClick={() => handleDelete(m.id)}>🗑</button>
+                            {!m.isDerived ? (
+                              <>
+                                <button className="btn btn--ghost btn--sm" onClick={() => openEdit(m)}>✏️</button>
+                                <button className="btn btn--danger btn--sm" onClick={() => handleDelete(m.id)}>🗑</button>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>🔒 Auto-logged</span>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -332,8 +367,14 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
                               <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.notes || '—'}</td>
                               <td>
                                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                  <button className="btn btn--ghost btn--sm" onClick={() => openEdit(entry)}>✏️</button>
-                                  <button className="btn btn--danger btn--sm" onClick={() => handleDelete(entry.id)}>🗑</button>
+                                  {!entry.isDerived ? (
+                                    <>
+                                      <button className="btn btn--ghost btn--sm" onClick={() => openEdit(entry)}>✏️</button>
+                                      <button className="btn btn--danger btn--sm" onClick={() => handleDelete(entry.id)}>🗑</button>
+                                    </>
+                                  ) : (
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>🔒 Live from Task</span>
+                                  )}
                                 </div>
                               </td>
                             </tr>
