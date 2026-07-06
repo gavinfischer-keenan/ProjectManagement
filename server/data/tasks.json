@@ -1,23 +1,6 @@
 {
   "tasks": [
     {
-      "id": "9df99040-d7a8-47ab-b145-eb000b3f283f",
-      "parentId": null,
-      "order": 0,
-      "name": "Garden",
-      "dependency": "",
-      "dependsOnTaskId": null,
-      "notes": "",
-      "targetDateStart": "2026-06-30",
-      "targetDateFinish": "2026-08-16",
-      "dateStarted": null,
-      "dateFinished": null,
-      "duration": 47,
-      "status": "In Progress",
-      "delayed": false,
-      "percentComplete": 0
-    },
-    {
       "id": "7bca13e6-43ad-412d-9ad2-9252ba73c62e",
       "parentId": null,
       "order": 1,
@@ -32,7 +15,8 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "c2b000b7-1abb-40c2-a0eb-34f77d9cf26e",
@@ -49,32 +33,34 @@
       "duration": 21,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "9c310c91-a83b-4b5e-baa2-8567440be711",
-      "parentId": "7bca13e6-43ad-412d-9ad2-9252ba73c62e",
+      "parentId": "9a41c867-1eb3-4809-8215-be0d591d75f3",
       "order": 3,
       "name": "Purchase Pads",
       "dependency": "",
-      "dependsOnTaskId": null,
+      "dependsOnTaskId": "9a41c867-1eb3-4809-8215-be0d591d75f3",
       "notes": "",
-      "targetDateStart": "2026-06-30",
+      "targetDateStart": "2026-07-17",
       "targetDateFinish": "2026-07-01",
       "dateStarted": "2026-06-30",
       "dateFinished": "2026-07-01",
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "0b41baac-701d-4cc1-b3de-e1fbcc087532",
-      "parentId": "9c310c91-a83b-4b5e-baa2-8567440be711",
+      "parentId": "7bca13e6-43ad-412d-9ad2-9252ba73c62e",
       "order": 4,
       "name": "Clean out crawl space",
-      "dependency": "Purchase Pads",
-      "dependsOnTaskId": "9c310c91-a83b-4b5e-baa2-8567440be711",
+      "dependency": "",
+      "dependsOnTaskId": null,
       "notes": "New Pads",
       "targetDateStart": "2026-07-01",
       "targetDateFinish": "2026-07-07",
@@ -83,24 +69,26 @@
       "duration": 6,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "9a41c867-1eb3-4809-8215-be0d591d75f3",
-      "parentId": "0b41baac-701d-4cc1-b3de-e1fbcc087532",
+      "parentId": "cc7bbc8d-06c7-4106-acd3-ab1461c45ef2",
       "order": 5,
       "name": "position Pads",
       "dependency": "Clean out crawl space",
-      "dependsOnTaskId": "0b41baac-701d-4cc1-b3de-e1fbcc087532",
+      "dependsOnTaskId": "cc7bbc8d-06c7-4106-acd3-ab1461c45ef2",
       "notes": "pads purchased- hold for discussion with electrician",
-      "targetDateStart": "2026-07-07",
+      "targetDateStart": "2026-07-20",
       "targetDateFinish": "2026-07-17",
       "dateStarted": null,
       "dateFinished": null,
       "duration": 10,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "cc7bbc8d-06c7-4106-acd3-ab1461c45ef2",
@@ -117,7 +105,8 @@
       "duration": 3,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "836f8aef-0c0e-48df-9e65-10b8ce5c300e",
@@ -134,7 +123,8 @@
       "duration": 1,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "a889e153-91da-4829-a11e-297666af7cbd",
@@ -151,7 +141,8 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "c51c2880-3291-403a-9cc0-6fdee9cb69ce",
@@ -168,7 +159,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "6aaec341-b33c-4216-bb8a-e3d73d73b1d2",
@@ -185,7 +177,8 @@
       "duration": 2,
       "status": "Completed",
       "delayed": true,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "32fa8cac-4080-4ca8-96b8-9b0354cc33ba",
@@ -202,75 +195,80 @@
       "duration": 5,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "ccb3fba6-f0f6-4a59-a267-361f2ea1a7bb",
-      "parentId": null,
+      "parentId": "7bca13e6-43ad-412d-9ad2-9252ba73c62e",
       "order": 12,
       "name": "AC Install",
       "dependency": "",
-      "dependsOnTaskId": null,
+      "dependsOnTaskId": "7bca13e6-43ad-412d-9ad2-9252ba73c62e",
       "notes": "",
-      "targetDateStart": "2026-06-30",
+      "targetDateStart": "2026-08-06",
       "targetDateFinish": "2026-07-21",
       "dateStarted": null,
       "dateFinished": null,
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "f6764ecc-afd4-401e-a0fb-eef3a9622b64",
-      "parentId": null,
+      "parentId": "6d85cf35-d877-44a0-817e-0e9b21fbdad4",
       "order": 13,
       "name": "Ken AC Installer",
       "dependency": "",
-      "dependsOnTaskId": "",
+      "dependsOnTaskId": "6d85cf35-d877-44a0-817e-0e9b21fbdad4",
       "notes": "Kenneth",
-      "targetDateStart": "2026-07-06",
+      "targetDateStart": "2026-07-21",
       "targetDateFinish": "2026-07-09",
       "dateStarted": "",
       "dateFinished": "",
       "duration": 3,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "0f63d082-cb63-46d0-8614-efaffd3b3d8f",
-      "parentId": null,
+      "parentId": "6d85cf35-d877-44a0-817e-0e9b21fbdad4",
       "order": 14,
       "name": "Lowes AC installer contact",
-      "dependency": "",
-      "dependsOnTaskId": "",
+      "dependency": "AC Install",
+      "dependsOnTaskId": "6d85cf35-d877-44a0-817e-0e9b21fbdad4",
       "notes": "Lowes",
-      "targetDateStart": "2026-07-03",
+      "targetDateStart": "2026-07-21",
       "targetDateFinish": "2026-07-08",
       "dateStarted": "",
       "dateFinished": "",
       "duration": 5,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "6d85cf35-d877-44a0-817e-0e9b21fbdad4",
-      "parentId": "ccb3fba6-f0f6-4a59-a267-361f2ea1a7bb",
+      "parentId": "f6764ecc-afd4-401e-a0fb-eef3a9622b64",
       "order": 15,
       "name": "AC Install",
-      "dependency": "AC Install",
-      "dependsOnTaskId": "ccb3fba6-f0f6-4a59-a267-361f2ea1a7bb",
+      "dependency": "Lowes AC installer contact",
+      "dependsOnTaskId": "f6764ecc-afd4-401e-a0fb-eef3a9622b64",
       "notes": "tied to electician and getting a person",
-      "targetDateStart": null,
+      "targetDateStart": "2026-07-09",
       "targetDateFinish": null,
       "dateStarted": null,
       "dateFinished": null,
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "72e2407a-d8ec-4013-94bd-546a24752991",
@@ -287,7 +285,8 @@
       "duration": 215,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "1ae93b97-4ffd-425d-81e5-c53d1f168a63",
@@ -304,7 +303,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "d784f684-2866-4cf3-8afc-1713d8c18527",
@@ -321,7 +321,8 @@
       "duration": 2,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "ef402520-f950-409f-9028-46f5dbcf2f8a",
@@ -338,7 +339,8 @@
       "duration": 30,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "0f98a4d6-8511-44e8-81e1-9f27aa9509fd",
@@ -355,7 +357,8 @@
       "duration": 30,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "8acd7944-ea0f-4a79-8662-0545cd02b9c2",
@@ -372,7 +375,8 @@
       "duration": 5,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "3e1257ad-e2cb-4394-b024-28e376391652",
@@ -389,7 +393,8 @@
       "duration": 45,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "a616f1df-852a-42e8-a9f4-0ad08dac084b",
@@ -406,7 +411,8 @@
       "duration": 14,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "9cf4774e-9a2c-44df-a796-76ea7d03615c",
@@ -423,7 +429,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "999e4a25-8744-4fb8-96e6-e2ee9f080574",
@@ -440,7 +447,8 @@
       "duration": 0,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "11cb56ea-3731-4942-a756-8d99ff2cf8e4",
@@ -457,7 +465,8 @@
       "duration": 0,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "66bad330-6a4b-4e52-8ac5-9f13f46c6087",
@@ -474,7 +483,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "8acdf12f-1dc9-48b9-8aa7-0fe8eaf6cb6e",
@@ -491,7 +501,8 @@
       "duration": 10,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "7e72929c-aad5-48d8-a94f-5050b892c117",
@@ -508,7 +519,8 @@
       "duration": 0,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "48c5a066-002d-4601-9e52-3a46a7bdad6e",
@@ -525,7 +537,8 @@
       "duration": 5,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "2d2a9382-a9bd-44c8-9509-5baf1bf58151",
@@ -542,7 +555,8 @@
       "duration": 0,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "f9e69e27-03de-4f0c-9f5d-8e03e4f0a068",
@@ -559,7 +573,8 @@
       "duration": 5,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "ada888d2-eaf0-43ea-9002-1436791136e1",
@@ -576,7 +591,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "46918431-6b5d-4a4e-b29c-42add7f8d9c8",
@@ -593,7 +609,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "379c6980-947d-4683-a075-7849af0386b2",
@@ -610,7 +627,8 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "eee83e85-62eb-4e64-a14e-8e2c4dfce0f4",
@@ -627,11 +645,12 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "5fd9b5c5-a72f-4fc2-a213-e85b6ae71022",
-      "parentId": "eee83e85-62eb-4e64-a14e-8e2c4dfce0f4",
+      "parentId": null,
       "order": 37,
       "name": "Plumbing scope and parts",
       "dependency": "",
@@ -644,11 +663,12 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "b58afc11-a3b2-40e5-83b6-5409a14339c1",
-      "parentId": "eee83e85-62eb-4e64-a14e-8e2c4dfce0f4",
+      "parentId": null,
       "order": 38,
       "name": "fix toilet",
       "dependency": "",
@@ -661,11 +681,12 @@
       "duration": 10,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "7d5dcb1b-8e2f-46f9-8ba7-ffe75e3fc9a9",
-      "parentId": "eee83e85-62eb-4e64-a14e-8e2c4dfce0f4",
+      "parentId": null,
       "order": 39,
       "name": "bathroom Sink",
       "dependency": "",
@@ -678,7 +699,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "4cdd0339-3f74-42da-b37d-64591d43b2cf",
@@ -695,7 +717,8 @@
       "duration": 10,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "c4f24e2c-0290-4363-ad2e-dcdf03e3aaed",
@@ -712,7 +735,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "5e9f11ef-a91d-41da-ae4e-e05853d0abc0",
@@ -729,41 +753,44 @@
       "duration": 5,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "d5917af7-ca8e-4b1f-880e-6970e5eb4931",
-      "parentId": "eee83e85-62eb-4e64-a14e-8e2c4dfce0f4",
+      "parentId": "3f1be67b-d6b3-4be7-bc79-60852ada81a3",
       "order": 43,
       "name": "Install insinkerator",
       "dependency": "",
-      "dependsOnTaskId": null,
+      "dependsOnTaskId": "3f1be67b-d6b3-4be7-bc79-60852ada81a3",
       "notes": "",
-      "targetDateStart": "2026-07-02",
+      "targetDateStart": "2026-07-09",
       "targetDateFinish": "2026-07-08",
       "dateStarted": null,
       "dateFinished": null,
       "duration": 6,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "3f1be67b-d6b3-4be7-bc79-60852ada81a3",
-      "parentId": "eee83e85-62eb-4e64-a14e-8e2c4dfce0f4",
+      "parentId": "5e9f11ef-a91d-41da-ae4e-e05853d0abc0",
       "order": 44,
       "name": "install outlet for insinkerator - check to make sure we have one",
-      "dependency": "",
-      "dependsOnTaskId": null,
+      "dependency": "buy In sink erator",
+      "dependsOnTaskId": "5e9f11ef-a91d-41da-ae4e-e05853d0abc0",
       "notes": "",
-      "targetDateStart": "2026-07-04",
+      "targetDateStart": "2026-07-06",
       "targetDateFinish": "2026-07-09",
-      "dateStarted": null,
-      "dateFinished": null,
-      "duration": 5,
+      "dateStarted": "",
+      "dateFinished": "",
+      "duration": 3,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "d56d6b44-8a39-4602-9a9b-8f959e6aa55f",
@@ -780,11 +807,12 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "aa007db1-f346-4021-9e32-d77939a936f5",
-      "parentId": "eee83e85-62eb-4e64-a14e-8e2c4dfce0f4",
+      "parentId": null,
       "order": 46,
       "name": "Fix the main door so it closes and locks easier",
       "dependency": "",
@@ -797,11 +825,12 @@
       "duration": 20,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "2cc34e5d-36eb-4041-9abd-56a54b00fdb3",
-      "parentId": "eee83e85-62eb-4e64-a14e-8e2c4dfce0f4",
+      "parentId": null,
       "order": 47,
       "name": "Check motion detector light above the main door",
       "dependency": "",
@@ -814,7 +843,8 @@
       "duration": null,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "6434157f-9ca9-4d10-8669-a985deb1cb44",
@@ -831,7 +861,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "38d16519-194b-461e-8cc8-a6d1d6abbf33",
@@ -848,7 +879,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "38b973cb-ec95-4ce5-89bd-c3fa08c6d9ea",
@@ -865,7 +897,8 @@
       "duration": 88,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "09d1ca6d-f142-4305-9b56-731a4ab2eba7",
@@ -882,11 +915,12 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "adcb0b6a-cafb-4d85-abae-e33f94faef10",
-      "parentId": "09d1ca6d-f142-4305-9b56-731a4ab2eba7",
+      "parentId": null,
       "order": 52,
       "name": "Install window Shade",
       "dependency": "",
@@ -899,11 +933,12 @@
       "duration": 20,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "6547facb-bd5a-46b7-a9cb-62bdb8a07f98",
-      "parentId": "09d1ca6d-f142-4305-9b56-731a4ab2eba7",
+      "parentId": null,
       "order": 53,
       "name": "Measure closet space for closet rod to hang clothes",
       "dependency": "",
@@ -916,11 +951,12 @@
       "duration": 10,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "12862be5-0034-45e8-8498-aab0deaa9c90",
-      "parentId": "09d1ca6d-f142-4305-9b56-731a4ab2eba7",
+      "parentId": null,
       "order": 54,
       "name": "Buy closet rods",
       "dependency": "",
@@ -933,7 +969,8 @@
       "duration": 5,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "30f52915-b67e-41cb-943a-57c0789aa160",
@@ -950,7 +987,8 @@
       "duration": 5,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "8398e3cb-08bc-405a-bbe0-571c9d26b0a0",
@@ -967,7 +1005,8 @@
       "duration": 10,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "1a7ee03c-d70e-4d16-8981-1d72781c09bf",
@@ -984,7 +1023,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "92d753ec-520d-49b3-9826-986596a9e66e",
@@ -1001,7 +1041,8 @@
       "duration": 15,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "1ce66043-b00e-4622-8972-46e619fd1d91",
@@ -1018,7 +1059,8 @@
       "duration": 15,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "1cf47b1b-c080-47e3-a6e2-9e404b951a5e",
@@ -1035,7 +1077,8 @@
       "duration": 45,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "99d66592-d7e4-44ad-9c95-d9e248bdafcf",
@@ -1052,7 +1095,8 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "15685898-8e77-418a-bca5-d5ba547bdc09",
@@ -1069,7 +1113,8 @@
       "duration": 45,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "054a1998-b579-4163-a339-65420246e4e4",
@@ -1086,7 +1131,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "6b296f06-ce14-4162-bb3d-887503f9ad15",
@@ -1103,7 +1149,8 @@
       "duration": 10,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "66db048a-a94d-4c46-9d29-c0af0acadbf9",
@@ -1120,7 +1167,8 @@
       "duration": 10,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "8b9cffdf-9a4c-4b36-a7b5-a7a863503f6c",
@@ -1137,7 +1185,8 @@
       "duration": 90,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "99b5758f-fbac-4f38-b76e-24c16378dcf2",
@@ -1154,7 +1203,8 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "0527480e-e1dd-439d-b8b1-642d29aeee41",
@@ -1171,7 +1221,8 @@
       "duration": 90,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "b8f2202d-ca08-4ff8-8acf-d6607c54f063",
@@ -1188,7 +1239,8 @@
       "duration": 3,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "a11e91d6-b72f-4c39-bcbc-e66cbcd7a5a1",
@@ -1205,7 +1257,8 @@
       "duration": 5,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "ebb45c91-dbf2-426e-951e-af78a2c29cec",
@@ -1222,7 +1275,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "07237eda-a965-4c26-a73e-bd9100ae48a8",
@@ -1239,7 +1293,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "ab7e7dd6-9606-4183-889b-b33f788aea1c",
@@ -1256,7 +1311,8 @@
       "duration": 1,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "87c13b35-930c-448d-a2b4-047dd1a9f979",
@@ -1273,7 +1329,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "3e260314-1bd8-4e49-8553-d227c2409476",
@@ -1290,7 +1347,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "9cf83020-d6bd-4d25-ab6a-01cc46a1a959",
@@ -1307,7 +1365,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "2d97a57b-35c6-40a5-ac8a-e8653c41d34c",
@@ -1324,7 +1383,8 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "5eaa51e8-3338-4e3b-a817-5bfb6b56842f",
@@ -1341,7 +1401,8 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "b31e8404-ebe2-40e0-b315-a4a492aa4616",
@@ -1358,7 +1419,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "a2f9a9b8-55e9-4d4f-81b4-f2db2692ed6b",
@@ -1375,7 +1437,8 @@
       "duration": 10,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "6c6be497-a6d8-45a6-a676-844045184864",
@@ -1392,7 +1455,8 @@
       "duration": 1,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "b54c554b-06ed-43dd-93a3-47ee0749039e",
@@ -1409,7 +1473,8 @@
       "duration": 6,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "f0b83854-1d36-4e89-8cfe-692955936c8d",
@@ -1426,7 +1491,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "dd3b1cf0-393a-49cc-a30d-1e333503e8e6",
@@ -1443,7 +1509,8 @@
       "duration": 5,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "4f8d73e0-a995-4e47-aa46-7b97f4da1cbb",
@@ -1460,7 +1527,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "a9fec75d-ba02-4746-966b-7e753706b382",
@@ -1477,7 +1545,8 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "7e8aa95c-d329-4512-be9f-e75ad3231048",
@@ -1494,7 +1563,8 @@
       "duration": 37,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "4103d7d0-4a5b-4623-97b0-f7f8b161853f",
@@ -1511,7 +1581,8 @@
       "duration": 10,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "76d1d7d9-bb87-4655-83c3-05f830ff62d2",
@@ -1528,7 +1599,8 @@
       "duration": null,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "8d614e4b-222e-43ce-9911-c08a92c2db4a",
@@ -1545,7 +1617,8 @@
       "duration": 5,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "82253ecd-1cf7-4f44-99d6-f0510aca3146",
@@ -1562,7 +1635,8 @@
       "duration": 5,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "3bfb60d3-048a-4660-9e2d-3dff3568679e",
@@ -1579,7 +1653,8 @@
       "duration": 10,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "b5dd6e6a-6717-47af-ae68-8aaf415874c7",
@@ -1596,7 +1671,8 @@
       "duration": 10,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "c06ec3f1-4f05-4f9f-a6b3-3a664c4f5e9f",
@@ -1613,7 +1689,8 @@
       "duration": 60,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "9f429f93-a939-4e12-9bd2-ef53cc5d5262",
@@ -1630,7 +1707,8 @@
       "duration": 60,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "307c9191-a640-435b-85f8-62380e2e3b54",
@@ -1647,7 +1725,8 @@
       "duration": null,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "5c531ffe-6cbf-4848-84f3-db018c6a8834",
@@ -1664,7 +1743,8 @@
       "duration": 10,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "e3dddbd9-0ace-4350-83e7-d0fe20309330",
@@ -1681,7 +1761,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "710a2c23-2c2a-494c-aed7-fea207d6db51",
@@ -1698,7 +1779,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "c78cf901-2583-4c7c-82ed-c23ed38722ac",
@@ -1715,7 +1797,8 @@
       "duration": 53,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "9f162f12-424a-49da-94f4-43b13451a7c4",
@@ -1732,7 +1815,8 @@
       "duration": 53,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "dfdfc224-bbb5-4f40-b45a-c0c39d83c4f6",
@@ -1749,7 +1833,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "27e062d7-dde6-47bd-920f-e08f3a44703b",
@@ -1766,7 +1851,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "2eec3443-6c85-4681-a394-f6cf5e2edb9a",
@@ -1783,7 +1869,8 @@
       "duration": 5,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "de4b3175-7ac5-42eb-aac3-a012e0370a91",
@@ -1800,7 +1887,8 @@
       "duration": 30,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "13c03c96-2642-4736-a4f9-c5d16ce5d460",
@@ -1817,7 +1905,8 @@
       "duration": 14,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "42b81198-5afe-4603-a237-14d728a5435d",
@@ -1834,7 +1923,8 @@
       "duration": 1,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "3d02d7d1-e1e6-421f-9f70-3afc36bc5e6f",
@@ -1851,7 +1941,8 @@
       "duration": 0,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "000bb68a-dad1-4d2b-a56d-88849f5405f3",
@@ -1868,7 +1959,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "132b8715-273b-49b1-ad2c-cf047328706b",
@@ -1885,7 +1977,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "8888a197-1740-44c9-bf84-05daf354739f",
@@ -1902,7 +1995,8 @@
       "duration": 47,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "b9edea98-3cff-4fc6-98b9-42b586455704",
@@ -1919,7 +2013,8 @@
       "duration": 46,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "581551b9-c6e7-4b1b-93d9-e1c7afcacc53",
@@ -1936,7 +2031,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "67621bbb-bfba-4f5b-b398-daccede7918c",
@@ -1953,7 +2049,8 @@
       "duration": 0,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "9e229a43-faef-4581-a9f9-8a408a57dcad",
@@ -1970,7 +2067,8 @@
       "duration": 45,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "f5c2b7cf-e80d-4aae-ac66-ab11f7be6a58",
@@ -1978,16 +2076,17 @@
       "order": 116,
       "name": "back Yard grass - cut and adjust sprinkler timing",
       "dependency": "",
-      "dependsOnTaskId": null,
+      "dependsOnTaskId": "",
       "notes": "",
       "targetDateStart": "2026-07-01",
       "targetDateFinish": "2026-07-29",
-      "dateStarted": null,
-      "dateFinished": null,
+      "dateStarted": "",
+      "dateFinished": "",
       "duration": 28,
-      "status": "In Progress",
+      "status": "Completed",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "26a6e3f3-bbef-42c6-b348-aae998556b59",
@@ -2004,7 +2103,8 @@
       "duration": 10,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "ca49c744-1e5d-41b7-a2a2-511b9942642e",
@@ -2021,7 +2121,8 @@
       "duration": 10,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "9b1cffa9-a85d-46fc-bceb-8ace7c09d2ff",
@@ -2038,7 +2139,8 @@
       "duration": 10,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "e77e2d69-7df0-4610-a63f-eeeccf79a520",
@@ -2055,7 +2157,8 @@
       "duration": 0,
       "status": "Not Started",
       "delayed": true,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "f0c05fcb-7bab-45e2-8297-ba3fd9fe5404",
@@ -2072,7 +2175,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "460a6ebe-8499-4116-9cb4-c860e0acb923",
@@ -2089,7 +2193,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "61134771-4512-472e-a4a7-731f7f2cc09c",
@@ -2106,7 +2211,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "4605eb98-59df-46af-91f2-3c0e16e2060b",
@@ -2123,7 +2229,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": true,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "129bc649-6a7d-4a8d-8c7d-6a9014db3f66",
@@ -2140,7 +2247,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "85b04a2f-9a12-4176-a18c-414ba1f75080",
@@ -2157,7 +2265,8 @@
       "duration": 10,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "4dcf3348-cb43-4bee-a5ec-50b80866ef3d",
@@ -2174,7 +2283,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "f41a3f98-48a9-4f90-b7b9-1c82a0d71549",
@@ -2191,7 +2301,8 @@
       "duration": 10,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "30b9ac66-fe1a-4ce9-8aa7-6fbee252d4cc",
@@ -2208,7 +2319,8 @@
       "duration": 10,
       "status": "In Progress",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "3f892adc-2b49-4e96-9c74-0cd61945c059",
@@ -2225,7 +2337,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "65cbb30a-9615-42ba-984d-bb19f96020e7",
@@ -2242,7 +2355,8 @@
       "duration": 1,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "8275818a-41e4-469e-923b-9572d061c26f",
@@ -2259,7 +2373,8 @@
       "duration": 5,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "23115085-b0ad-4943-9ddd-3757e56b7ccc",
@@ -2276,7 +2391,8 @@
       "duration": 5,
       "status": "Completed",
       "delayed": false,
-      "percentComplete": 100
+      "percentComplete": 100,
+      "taskType": "task"
     },
     {
       "id": "4df6da75-aaa2-4b73-8d74-8ae99359bf3a",
@@ -2293,7 +2409,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "15d992c8-a8f8-4551-b6e8-d9957456b735",
@@ -2310,7 +2427,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "1df95fe8-b075-47d5-b4ef-f2154196a5de",
@@ -2327,7 +2445,8 @@
       "duration": 0,
       "status": "Not Started",
       "delayed": true,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "f782c9b1-4dd1-4f98-ae09-c75e48d96950",
@@ -2344,7 +2463,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "c0dd17fa-62dc-47a1-b5fd-9a736227d3b1",
@@ -2361,7 +2481,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "69aaaebf-c714-44b7-b06d-898a27176884",
@@ -2378,7 +2499,8 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
     },
     {
       "id": "aeed38a5-ebd2-4ff9-a63b-f948b6ea3fd7",
@@ -2395,7 +2517,62 @@
       "duration": null,
       "status": "Not Started",
       "delayed": false,
-      "percentComplete": 0
+      "percentComplete": 0,
+      "taskType": "task"
+    },
+    {
+      "id": "b43ad706-9509-404d-b0da-d543da02d698",
+      "parentId": null,
+      "order": 56,
+      "name": "Garden",
+      "dependency": "",
+      "dependsOnTaskId": null,
+      "notes": "All work in the Garden",
+      "targetDateStart": null,
+      "targetDateFinish": null,
+      "dateStarted": null,
+      "dateFinished": null,
+      "duration": null,
+      "status": "Not Started",
+      "delayed": false,
+      "percentComplete": 0,
+      "taskType": "task"
+    },
+    {
+      "id": "b6840395-30c7-4e8d-9130-50a6aa68174d",
+      "parentId": null,
+      "order": 57,
+      "name": "Garden 2",
+      "dependency": "",
+      "dependsOnTaskId": null,
+      "notes": "",
+      "targetDateStart": null,
+      "targetDateFinish": null,
+      "dateStarted": null,
+      "dateFinished": null,
+      "duration": null,
+      "status": "Not Started",
+      "delayed": false,
+      "percentComplete": 0,
+      "taskType": "task"
+    },
+    {
+      "id": "d068428f-335f-4708-b478-e526ed05ec63",
+      "parentId": null,
+      "order": 58,
+      "name": "asdfasdfasdfasdfasdfasdfasdf",
+      "dependency": "",
+      "dependsOnTaskId": null,
+      "notes": "",
+      "targetDateStart": null,
+      "targetDateFinish": null,
+      "dateStarted": null,
+      "dateFinished": null,
+      "duration": null,
+      "status": "Not Started",
+      "delayed": false,
+      "percentComplete": 0,
+      "taskType": "task"
     }
   ]
 }

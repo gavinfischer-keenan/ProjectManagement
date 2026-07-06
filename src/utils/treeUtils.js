@@ -73,13 +73,30 @@ export function getDescendantIds(taskId, flatTasks) {
 }
 
 /**
- * Calculate rollup stats for a parent task from its direct children.
+ * Collect all leaf descendants (tasks with no children) under a given parentId.
+ */
+function getAllLeafDescendants(parentId, allTasks) {
+  const directChildren = allTasks.filter((t) => t.parentId === parentId);
+  if (directChildren.length === 0) return [];
+  let leaves = [];
+  for (const child of directChildren) {
+    const grandchildren = allTasks.filter((t) => t.parentId === child.id);
+    if (grandchildren.length === 0) {
+      leaves.push(child); // It's a leaf
+    } else {
+      leaves = leaves.concat(getAllLeafDescendants(child.id, allTasks));
+    }
+  }
+  return leaves;
+}
+
+/**
+ * Calculate rollup stats for a parent/section from ALL descendant leaf tasks.
  * Returns { percentComplete, status, totalChildren, completedChildren, lateChildren }.
  */
 export function calculateRollup(parentTask, allTasks) {
-  const children = allTasks.filter((t) => t.parentId === parentTask.id);
-
-  if (children.length === 0) {
+  const directChildren = allTasks.filter((t) => t.parentId === parentTask.id);
+  if (directChildren.length === 0) {
     return {
       percentComplete: parentTask.percentComplete || 0,
       status: parentTask.status || 'Not Started',
@@ -89,27 +106,30 @@ export function calculateRollup(parentTask, allTasks) {
     };
   }
 
-  const totalChildren = children.length;
-  const completedChildren = children.filter(
+  // For display in the badge (X/Y done), use direct children count
+  const totalChildren = directChildren.length;
+  const completedChildren = directChildren.filter(
     (c) => c.status === 'Completed' || c.percentComplete === 100
   ).length;
 
-  const lateChildren = children.filter((c) => {
+  // For percentComplete, use all leaf descendants for accurate rollup
+  const leaves = getAllLeafDescendants(parentTask.id, allTasks);
+  const totalLeaves = leaves.length || 1; // avoid div by zero
+
+  const lateChildren = leaves.filter((c) => {
     if (c.dateFinished) return false;
     if (!c.targetDateFinish) return false;
-    const target = new Date(c.targetDateFinish);
-    const now = new Date();
-    return target < now;
+    return new Date(c.targetDateFinish) < new Date();
   }).length;
 
   const percentComplete = Math.round(
-    children.reduce((sum, c) => sum + (c.percentComplete || 0), 0) / totalChildren
+    leaves.reduce((sum, c) => sum + (c.percentComplete || 0), 0) / totalLeaves
   );
 
   let status;
-  if (completedChildren === totalChildren) {
+  if (completedChildren === totalChildren && totalChildren > 0) {
     status = 'Completed';
-  } else if (children.some((c) => c.status === 'In Progress' || (c.percentComplete || 0) > 0)) {
+  } else if (directChildren.some((c) => c.status === 'In Progress' || (c.percentComplete || 0) > 0)) {
     status = 'In Progress';
   } else {
     status = 'Not Started';
@@ -117,6 +137,7 @@ export function calculateRollup(parentTask, allTasks) {
 
   return { percentComplete, status, totalChildren, completedChildren, lateChildren };
 }
+
 
 /**
  * Check if a task can start (its dependency predecessor is completed).

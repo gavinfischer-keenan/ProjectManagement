@@ -6,7 +6,9 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { buildTree, flattenTree } from '../utils/treeUtils.js';
 import TaskRow from './TaskRow.jsx';
 import TaskEditModal from './TaskEditModal.jsx';
+import CreateTaskModal from './CreateTaskModal.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
+import GanttTimeline from './GanttTimeline.jsx';
 
 export default function TaskTable({
   tasks,
@@ -27,6 +29,8 @@ export default function TaskTable({
   const [editingTask, setEditingTask] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [dragState, setDragState] = useState({ dragId: null, overId: null });
+  const [showGantt, setShowGantt] = useState(false);
+  const [createModal, setCreateModal] = useState(null); // { defaultType, defaultParentId } | null
 
   /* ── Tree ───────────────────────────────────────────────── */
   const tree = useMemo(() => buildTree(tasks), [tasks]);
@@ -88,6 +92,54 @@ export default function TaskTable({
     [editingTask, onTaskUpdate]
   );
 
+  /**
+   * Create a prerequisite task that inserts before `editingTask`.
+   * - Same parentId as the current task
+   * - Inserts at the same order slot; everything at that slot+ shifts up
+   * - targetDateFinish = provided finish (or this task's targetDateStart)
+   * Returns the created task object so the modal can set dependsOnTaskId.
+   */
+  const handleCreatePrerequisiteFor = useCallback(
+    async (prereqName, prereqFinish) => {
+      if (!editingTask) return null;
+
+      // Shift order: all sibling tasks at same or higher order get +1
+      const siblings = tasks.filter(
+        (t) => t.parentId === editingTask.parentId && t.id !== editingTask.id
+      );
+      const insertAt = editingTask.order ?? 0;
+      const toShift = siblings.filter((t) => (t.order ?? 0) >= insertAt);
+
+      // Perform the shifts via batch reorder
+      if (toShift.length > 0) {
+        const orderings = toShift.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
+        try {
+          await fetch('/api/tasks/reorder', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderings }),
+          });
+        } catch (err) {
+          console.error('Failed to shift task orders:', err);
+        }
+      }
+
+      // Create the prerequisite task
+      const newTask = {
+        name: prereqName,
+        taskType: 'task',
+        parentId: editingTask.parentId,
+        order: insertAt,
+        status: 'Not Started',
+        percentComplete: 0,
+        targetDateFinish: prereqFinish || editingTask.targetDateStart || null,
+      };
+      const created = await onTaskCreate(newTask);
+      return created;
+    },
+    [editingTask, tasks, onTaskCreate]
+  );
+
   const handleDeleteRequest = useCallback(
     (task) => {
       const hasChildren = tasks.some((t) => t.parentId === task.id);
@@ -108,14 +160,17 @@ export default function TaskTable({
   }, [confirmDelete, onTaskDelete]);
 
   const handleAddTask = useCallback(() => {
-    const newTask = {
-      name: 'New Task',
-      parentId: null,
-      order: tasks.filter((t) => !t.parentId).length,
-      status: 'Not Started',
-      percentComplete: 0,
-    };
-    onTaskCreate(newTask);
+    setCreateModal({ defaultType: 'task', defaultParentId: null });
+  }, []);
+
+  const handleAddSection = useCallback(() => {
+    setCreateModal({ defaultType: 'section', defaultParentId: null });
+  }, []);
+
+  const handleCreateSave = useCallback(async (payload) => {
+    const order = tasks.filter((t) => !t.parentId).length;
+    await onTaskCreate({ order, ...payload });
+    setCreateModal(null);
   }, [tasks, onTaskCreate]);
 
   const handleAddSubtask = useCallback(
@@ -154,18 +209,18 @@ export default function TaskTable({
       e.preventDefault();
       const sourceId = e.dataTransfer.getData('text/plain');
       setDragState({ dragId: null, overId: null });
-
       if (sourceId === targetId) return;
-
       const sourceTask = tasks.find((t) => String(t.id) === sourceId);
       const targetTask = tasks.find((t) => t.id === targetId);
       if (!sourceTask || !targetTask) return;
 
-      // Indent (Reparent): Make the source task a child (dependency) of the target task
-      await onTaskUpdate(sourceTask.id, { 
-        parentId: targetTask.id,
-        dependsOnTaskId: targetTask.id 
-      });
+      // If dropping onto a SECTION: nest without dependency
+      // If dropping onto a TASK: nest AND create dependency (old behaviour)
+      const isTargetSection = targetTask.taskType === 'section';
+      const updates = { parentId: targetTask.id };
+      if (!isTargetSection) updates.dependsOnTaskId = targetTask.id;
+
+      await onTaskUpdate(sourceTask.id, updates);
     },
     [tasks, onTaskUpdate]
   );
@@ -173,6 +228,46 @@ export default function TaskTable({
   const handleDragEnd = useCallback(() => {
     setDragState({ dragId: null, overId: null });
   }, []);
+
+  /* ── Indent / Outdent ───────────────────────────────────── */
+  const handleIndent = useCallback(
+    async (taskId) => {
+      const idx = visibleRows.findIndex((r) => r.id === taskId);
+      if (idx <= 0) return;
+      const taskAbove = visibleRows[idx - 1];
+      const task = visibleRows[idx];
+      if (task.parentId === taskAbove.id) return;
+
+      const isAboveSection = taskAbove.taskType === 'section';
+      const updates = { parentId: taskAbove.id };
+
+      if (!isAboveSection) {
+        // Task-on-task indent: create dependency
+        updates.dependsOnTaskId = taskAbove.id;
+        updates.dependency = taskAbove.name;
+        if (taskAbove.targetDateFinish) {
+          updates.targetDateStart = taskAbove.targetDateFinish;
+        }
+      }
+      // Section indent: parentId only, no dependency
+      await onTaskUpdate(taskId, updates);
+    },
+    [visibleRows, onTaskUpdate]
+  );
+
+  const handleOutdent = useCallback(
+    async (taskId) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || !task.parentId) return; // already top level
+      const parent = tasks.find((t) => t.id === task.parentId);
+      await onTaskUpdate(taskId, {
+        parentId: parent ? parent.parentId : null,
+        dependsOnTaskId: null,
+        dependency: '',
+      });
+    },
+    [tasks, onTaskUpdate]
+  );
 
   /* ── Render ─────────────────────────────────────────────── */
   if (tasks.length === 0) {
@@ -201,17 +296,28 @@ export default function TaskTable({
       <div className="table-toolbar">
         <h2 className="table-title">Project Tasks</h2>
         <div className="table-toolbar-actions">
+          <button
+            className={`btn btn-sm ${showGantt ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setShowGantt((v) => !v)}
+            title={showGantt ? 'Hide Gantt Timeline' : 'Show Gantt Timeline'}
+          >
+            📅 Timeline
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={handleAddSection} title="Add a new section header">
+            § Add Section
+          </button>
           <button className="btn btn-primary btn-sm" onClick={handleAddTask}>
             + Add Task
           </button>
         </div>
       </div>
 
-      <div className="task-table-container">
+      <div className={`tracker-layout ${showGantt ? 'gantt-open' : ''}`}>
+        <div className="task-table-container">
         <table className="task-table">
           <thead>
             <tr>
-              <th style={{ width: 36 }}></th>
+              <th style={{ width: 70 }}></th>
               <th>Task Name</th>
               <th>Dep.</th>
               <th>Target Start</th>
@@ -225,7 +331,7 @@ export default function TaskTable({
             </tr>
           </thead>
           <tbody>
-            {visibleRows.map((row) => (
+            {visibleRows.map((row, idx) => (
               <TaskRow
                 key={row.id}
                 task={row}
@@ -245,11 +351,33 @@ export default function TaskTable({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onDragEnd={handleDragEnd}
+                onIndent={handleIndent}
+                onOutdent={handleOutdent}
+                isFirstRow={idx === 0}
               />
             ))}
           </tbody>
         </table>
-      </div>
+        </div> {/* end task-table-container */}
+
+      {/* Gantt Side Panel */}
+      {showGantt && (
+        <div className="gantt-side-panel">
+          <GanttTimeline tasks={tasks} onClose={() => setShowGantt(false)} />
+        </div>
+      )}
+      </div>  {/* end tracker-layout */}
+
+      {/* Create Task/Section Modal */}
+      {createModal && (
+        <CreateTaskModal
+          allTasks={tasks}
+          defaultType={createModal.defaultType}
+          defaultParentId={createModal.defaultParentId}
+          onSave={handleCreateSave}
+          onClose={() => setCreateModal(null)}
+        />
+      )}
 
       {/* Edit Modal */}
       {editingTask && (
@@ -259,6 +387,7 @@ export default function TaskTable({
           onSave={handleEditSave}
           onClose={() => setEditingTask(null)}
           onShowMaintenancePrompt={onShowMaintenancePrompt}
+          onCreatePrerequisite={handleCreatePrerequisiteFor}
         />
       )}
 
