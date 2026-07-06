@@ -11,6 +11,7 @@ export default function TaskEditModal({
   onSave,
   onClose,
   onShowMaintenancePrompt,
+  onCreatePrerequisite, // async (name, targetFinish) => createdTask
 }) {
   /* ── Form State ─────────────────────────────────────────── */
   const [form, setForm] = useState({
@@ -31,6 +32,18 @@ export default function TaskEditModal({
   const prevDateFinished = useRef(task.dateFinished || '');
   const overlayRef = useRef(null);
 
+  /* ── Prerequisite Panel State ────────────────────────────── */
+  const [showPrereqPanel, setShowPrereqPanel] = useState(false);
+  const [prereqName, setPrereqName]           = useState('');
+  const [prereqFinish, setPrereqFinish]       = useState(form.targetDateStart || '');
+  const [prereqSaving, setPrereqSaving]       = useState(false);
+  const [prereqError, setPrereqError]         = useState('');
+  const prereqNameRef = useRef(null);
+
+  useEffect(() => {
+    if (showPrereqPanel && prereqNameRef.current) prereqNameRef.current.focus();
+  }, [showPrereqPanel]);
+
   /* ── Dependency Check ───────────────────────────────────── */
   const blockInfo = canStartTask(
     { ...task, dependsOnTaskId: form.dependsOnTaskId },
@@ -45,23 +58,54 @@ export default function TaskEditModal({
   const handleDateFinishedChange = (value) => {
     const wasEmpty = !prevDateFinished.current;
     const nowFilled = !!value;
-    handleChange('dateFinished', value);
-
-    if (wasEmpty && nowFilled && onShowMaintenancePrompt) {
-      onShowMaintenancePrompt(task);
+    // Auto-sync: filling finish date → mark Completed
+    const updates = { dateFinished: value };
+    if (nowFilled) {
+      updates.status = 'Completed';
+      updates.percentComplete = 100;
+      if (!form.dateStarted) updates.dateStarted = form.targetDateStart || todayStr();
+      if (wasEmpty && onShowMaintenancePrompt) {
+        onShowMaintenancePrompt(task);
+      }
     }
+    setForm((prev) => ({ ...prev, ...updates }));
     prevDateFinished.current = value;
+  };
+
+  const todayStr = () => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  };
+
+  const handleStatusChange = (value) => {
+    const updates = { status: value };
+    if (value === 'Completed') {
+      updates.percentComplete = 100;
+      if (!form.dateFinished) updates.dateFinished = todayStr();
+      if (!form.dateStarted) updates.dateStarted = form.targetDateStart || todayStr();
+    } else if (value === 'In Progress') {
+      if (!form.dateStarted) updates.dateStarted = todayStr();
+      if (form.percentComplete === 100) updates.percentComplete = 50;
+    } else if (value === 'Not Started') {
+      updates.percentComplete = 0;
+    }
+    setForm((prev) => ({ ...prev, ...updates }));
   };
 
   const handlePercentChange = (value) => {
     const num = Number(value);
-    handleChange('percentComplete', num);
-    // Auto-set status
+    const updates = { percentComplete: num };
     if (num === 100) {
-      handleChange('status', 'Completed');
+      updates.status = 'Completed';
+      if (!form.dateFinished) updates.dateFinished = todayStr();
+      if (!form.dateStarted) updates.dateStarted = form.targetDateStart || todayStr();
     } else if (num > 0) {
-      handleChange('status', 'In Progress');
+      updates.status = 'In Progress';
+      if (!form.dateStarted) updates.dateStarted = todayStr();
+    } else {
+      updates.status = 'Not Started';
     }
+    setForm((prev) => ({ ...prev, ...updates }));
   };
 
   const handleSubmit = (e) => {
@@ -76,6 +120,39 @@ export default function TaskEditModal({
   const handleOverlayClick = (e) => {
     if (e.target === overlayRef.current) {
       onClose();
+    }
+  };
+
+  /* ── Prerequisite creation ──────────────────────────────── */
+  const handleCreatePrerequisite = async (e) => {
+    e.preventDefault();
+    if (!prereqName.trim()) {
+      setPrereqError('Task name is required.');
+      if (prereqNameRef.current) prereqNameRef.current.focus();
+      return;
+    }
+    if (!onCreatePrerequisite) return;
+    setPrereqSaving(true);
+    setPrereqError('');
+    try {
+      const created = await onCreatePrerequisite(prereqName.trim(), prereqFinish || null);
+      if (created && created.id) {
+        // Wire the current task to depend on the newly created task
+        setForm((prev) => ({
+          ...prev,
+          dependsOnTaskId: created.id,
+          dependency: created.name,
+          // If this task has no start date yet, inherit the new task's finish date
+          targetDateStart: prev.targetDateStart || prereqFinish || '',
+        }));
+      }
+      setShowPrereqPanel(false);
+      setPrereqName('');
+      setPrereqFinish('');
+    } catch (err) {
+      setPrereqError('Failed to create prerequisite task.');
+    } finally {
+      setPrereqSaving(false);
     }
   };
 
@@ -145,6 +222,95 @@ export default function TaskEditModal({
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Add Prerequisite Task Panel */}
+            <div className="prereq-section">
+              {/* Current prerequisite chip */}
+              {form.dependsOnTaskId && (() => {
+                const pred = allTasks.find((t) => t.id === form.dependsOnTaskId);
+                return pred ? (
+                  <div className="prereq-current">
+                    <span className="prereq-current-label">⛓ Must complete first:</span>
+                    <span className="prereq-chip">
+                      <span className="prereq-chip-name">{pred.name}</span>
+                      <button
+                        type="button"
+                        className="prereq-chip-remove"
+                        title="Remove this dependency"
+                        onClick={() => setForm((p) => ({ ...p, dependsOnTaskId: '', dependency: '' }))}
+                      >✕</button>
+                    </span>
+                  </div>
+                ) : null;
+              })()}
+
+              {!showPrereqPanel ? (
+                <button
+                  type="button"
+                  className="btn-add-prereq"
+                  onClick={() => {
+                    setPrereqFinish(form.targetDateStart || '');
+                    setShowPrereqPanel(true);
+                  }}
+                  disabled={!onCreatePrerequisite}
+                >
+                  <span className="btn-add-prereq-icon">⬡</span>
+                  Add Prerequisite Task
+                  <span className="btn-add-prereq-hint">creates a new task that must finish before this one</span>
+                </button>
+              ) : (
+                <div className="prereq-panel">
+                  <div className="prereq-panel-header">
+                    <span className="prereq-panel-title">⬡ New Prerequisite Task</span>
+                    <button type="button" className="prereq-panel-cancel" onClick={() => {
+                      setShowPrereqPanel(false);
+                      setPrereqName('');
+                      setPrereqError('');
+                    }}>✕</button>
+                  </div>
+                  <p className="prereq-panel-hint">
+                    This new task will be inserted before <strong>"{form.name || 'this task'}"</strong> and must be completed first.
+                  </p>
+                  <div className="form-group">
+                    <label className="form-label">Prerequisite Task Name <span className="required-star">*</span></label>
+                    <input
+                      ref={prereqNameRef}
+                      className={'form-input' + (prereqError ? ' input-error' : '')}
+                      placeholder='e.g. "Select Paint Color"'
+                      value={prereqName}
+                      onChange={(e) => { setPrereqName(e.target.value); setPrereqError(''); }}
+                      onKeyDown={(e) => { if (e.key === 'Escape') { setShowPrereqPanel(false); setPrereqName(''); } }}
+                    />
+                    {prereqError && <span className="form-error">{prereqError}</span>}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Must be done by (Target Finish)</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={prereqFinish}
+                      onChange={(e) => setPrereqFinish(e.target.value)}
+                    />
+                    <span className="form-help">Auto-set to this task's Target Start if left blank.</span>
+                  </div>
+                  <div className="prereq-panel-actions">
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+                      setShowPrereqPanel(false);
+                      setPrereqName('');
+                      setPrereqError('');
+                    }}>Cancel</button>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={handleCreatePrerequisite}
+                      disabled={prereqSaving}
+                    >
+                      {prereqSaving ? 'Creating…' : '✅ Create & Link'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Blocked Warning */}
@@ -217,7 +383,7 @@ export default function TaskEditModal({
                 <select
                   className="form-select"
                   value={form.status}
-                  onChange={(e) => handleChange('status', e.target.value)}
+                  onChange={(e) => handleStatusChange(e.target.value)}
                 >
                   <option value="Not Started">Not Started</option>
                   <option value="In Progress">In Progress</option>

@@ -95,8 +95,10 @@ export default function App() {
     try {
       const created = await createTask(task);
       setTasks((prev) => [...prev, created]);
+      return created; // Return so callers (e.g. prerequisite flow) can use the new ID
     } catch (err) {
       console.error('Failed to create task:', err);
+      return null;
     }
   }, []);
 

@@ -101,6 +101,7 @@ router.post('/', (req, res) => {
       parentId: req.body.parentId ?? null,
       order: req.body.order ?? tasks.length,
       name: name.trim(),
+      taskType: req.body.taskType ?? 'task',
       dependency: req.body.dependency ?? '',
       dependsOnTaskId: req.body.dependsOnTaskId ?? null,
       notes: req.body.notes ?? '',
@@ -139,7 +140,7 @@ router.put('/:id', (req, res) => {
 
     // Merge only supplied fields
     const updatable = [
-      'parentId', 'order', 'name', 'dependency', 'dependsOnTaskId',
+      'parentId', 'order', 'name', 'taskType', 'dependency', 'dependsOnTaskId',
       'notes', 'targetDateStart', 'targetDateFinish', 'dateStarted',
       'dateFinished', 'duration', 'status', 'delayed', 'percentComplete',
     ];
@@ -147,6 +148,15 @@ router.put('/:id', (req, res) => {
     for (const field of updatable) {
       if (field in req.body) {
         tasks[index][field] = req.body[field];
+      }
+    }
+
+    // Auto-wire: if a dependency was set, inherit its finish date as our start date
+    // (only if targetDateStart was NOT explicitly provided in this request)
+    if ('dependsOnTaskId' in req.body && req.body.dependsOnTaskId && !('targetDateStart' in req.body)) {
+      const predecessor = tasks.find((t) => t.id === req.body.dependsOnTaskId);
+      if (predecessor && predecessor.targetDateFinish) {
+        tasks[index].targetDateStart = predecessor.targetDateFinish;
       }
     }
 

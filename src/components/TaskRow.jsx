@@ -27,6 +27,9 @@ export default function TaskRow({
   onDragLeave,
   onDrop,
   onDragEnd,
+  onIndent,
+  onOutdent,
+  isFirstRow,
 }) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(task.name || '');
@@ -62,15 +65,23 @@ export default function TaskRow({
   };
 
   /* ── Derived data ───────────────────────────────────────── */
-  const rowClass = getRowClass(task);
-  const startCellClass = getDateCellClass(task.dateStarted, task.targetDateStart);
+  const baseRowClass = getRowClass(task);
+  const isSection    = task.taskType === 'section';
+  // Show as group header if: is a section (even empty) OR is a task with children
+  const isGroupHeader = isSection || hasChildren;
+  const rowClass = [
+    baseRowClass,
+    isGroupHeader ? 'row-group-header' : '',
+    isSection     ? 'row-section-type'  : '',
+  ].join(' ').trim();
+  const startCellClass  = getDateCellClass(task.dateStarted, task.targetDateStart);
   const finishCellClass = getDateCellClass(task.dateFinished, task.targetDateFinish);
   const { canStart, blockedBy } = canStartTask(task, allTasks);
 
-  // Rollup for parent rows
-  const rollup = hasChildren ? calculateRollup(task, allTasks) : null;
+  // Rollup for group-header rows
+  const rollup = isGroupHeader ? calculateRollup(task, allTasks) : null;
   const displayPercent = rollup ? rollup.percentComplete : (task.percentComplete || 0);
-  const displayStatus = rollup ? rollup.status : (task.status || 'Not Started');
+  const displayStatus  = rollup ? rollup.status : (task.status || 'Not Started');
 
   /* ── Drag state classes ─────────────────────────────────── */
   const isDragging = dragState.dragId === String(task.id);
@@ -96,76 +107,125 @@ export default function TaskRow({
       onDrop={(e) => onDrop(e, task.id)}
       onDragEnd={onDragEnd}
     >
-      {/* Drag Handle / Expand */}
-      <td>
-        {hasChildren ? (
+      {/* Indent controls + Expand/Drag Handle */}
+      <td style={{ whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {/* Outdent */}
           <button
-            className="expand-toggle"
-            onClick={() => onToggleExpand(task.id)}
-            title={isExpanded ? 'Collapse' : 'Expand'}
+            className="indent-btn"
+            onClick={() => onOutdent(task.id)}
+            disabled={!task.parentId}
+            title="Outdent (remove from parent)"
           >
-            <span className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>▶</span>
+            ◀
           </button>
-        ) : (
-          <span className="drag-handle" title="Drag to reorder">⠿</span>
-        )}
-      </td>
-
-      {/* Task Name */}
-      <td>
-        <div className={`indent-${Math.min(depth, 5)}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {editingName ? (
-            <input
-              ref={inputRef}
-              className="task-name-input"
-              value={nameValue}
-              onChange={(e) => setNameValue(e.target.value)}
-              onBlur={commitNameEdit}
-              onKeyDown={handleNameKeyDown}
-            />
-          ) : (
-            <span
-              className="task-name-editable"
-              onClick={() => onEdit(task)}
-              title="Click to view details"
+          {/* Expand toggle or drag handle */}
+          {hasChildren ? (
+            <button
+              className="expand-toggle"
+              onClick={() => onToggleExpand(task.id)}
+              title={isExpanded ? 'Collapse' : 'Expand'}
             >
-              {task.name || 'Untitled'}
-            </span>
+              <span className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>▶</span>
+            </button>
+          ) : (
+            <span className="drag-handle" title="Drag to reorder">⠿</span>
           )}
-          {!canStart && (
-            <span className="blocked-icon" title={`Blocked by: ${blockedBy}`}>🔒</span>
-          )}
-          {hasChildren && rollup && (
-            <span className="rollup-info">
-              ({rollup.completedChildren}/{rollup.totalChildren} done)
-            </span>
-          )}
+          {/* Indent */}
+          <button
+            className="indent-btn"
+            onClick={() => onIndent(task.id)}
+            disabled={isFirstRow}
+            title="Indent (make dependent on row above)"
+          >
+            ▶
+          </button>
         </div>
       </td>
 
-      {/* Dependency */}
-      <td>
-        {task.dependency || '—'}
-      </td>
+      {/* Task Name and Details — full-span for sections and parent tasks */}
+      {isGroupHeader ? (
+        <td colSpan={7}>
+          <div className={`indent-${Math.min(depth, 5)}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {editingName ? (
+              <input
+                ref={inputRef}
+                className="task-name-input"
+                value={nameValue}
+                onChange={(e) => setNameValue(e.target.value)}
+                onBlur={commitNameEdit}
+                onKeyDown={handleNameKeyDown}
+              />
+            ) : (
+              <span
+                className="task-name-editable group-label-text"
+                onClick={() => onEdit(task)}
+                title="Click to view/edit"
+              >
+                {task.name || 'Untitled'}
+              </span>
+            )}
+            {isSection && (
+              <span className="section-badge" title="Section — groups tasks below it">§ SECTION</span>
+            )}
+            {rollup && rollup.totalChildren > 0 && (
+              <span className="rollup-info">
+                ({rollup.completedChildren}/{rollup.totalChildren} done)
+              </span>
+            )}
+            {isSection && rollup && rollup.totalChildren === 0 && (
+              <span className="section-empty-hint">drag tasks here or use indent ▶</span>
+            )}
+          </div>
+        </td>
+      ) : (
+        <>
+          {/* Task Name */}
+          <td>
+            <div className={`indent-${Math.min(depth, 5)}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {editingName ? (
+                <input
+                  ref={inputRef}
+                  className="task-name-input"
+                  value={nameValue}
+                  onChange={(e) => setNameValue(e.target.value)}
+                  onBlur={commitNameEdit}
+                  onKeyDown={handleNameKeyDown}
+                />
+              ) : (
+                <span
+                  className="task-name-editable"
+                  onClick={() => onEdit(task)}
+                  title="Click to view details"
+                >
+                  {task.name || 'Untitled'}
+                </span>
+              )}
+              {!canStart && (
+                <span className="blocked-icon" title={`Blocked by: ${blockedBy}`}>🔒</span>
+              )}
+            </div>
+          </td>
 
-      {/* Target Start */}
-      <td>{formatDate(task.targetDateStart)}</td>
+          {/* Dependency */}
+          <td>{task.dependency || '—'}</td>
 
-      {/* Target Finish */}
-      <td>{formatDate(task.targetDateFinish)}</td>
+          {/* Target Start */}
+          <td>{formatDate(task.targetDateStart)}</td>
 
-      {/* Date Started */}
-      <td className={startCellClass}>
-        {formatDate(task.dateStarted)}
-      </td>
+          {/* Target Finish */}
+          <td>{formatDate(task.targetDateFinish)}</td>
 
-      {/* Date Finished */}
-      <td className={finishCellClass}>
-        {formatDate(task.dateFinished)}
-      </td>
+          {/* Date Started */}
+          <td className={startCellClass}>{formatDate(task.dateStarted)}</td>
 
-      {/* Duration */}
-      <td>{task.duration != null ? `${task.duration}d` : '—'}</td>
+          {/* Date Finished */}
+          <td className={finishCellClass}>{formatDate(task.dateFinished)}</td>
+
+          {/* Duration */}
+          <td>{task.duration != null ? `${task.duration}d` : '—'}</td>
+        </>
+      )}
 
       {/* Progress */}
       <td>

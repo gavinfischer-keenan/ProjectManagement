@@ -12,7 +12,7 @@ export default function SummaryDashboard({ tasks = [], maintenanceEntries = [] }
   const stats = useMemo(() => {
     const total = leafTasks.length;
     const completed = leafTasks.filter((t) => t.dateFinished || t.status === 'Completed').length;
-    const late = leafTasks.filter((t) => isLate(t)).length;
+    const late = leafTasks.filter((t) => isLate(t.targetDateFinish, t.dateFinished)).length;
     const inProgress = leafTasks.filter(
       (t) => t.status === 'In Progress' && !t.dateFinished
     ).length;
@@ -56,7 +56,7 @@ export default function SummaryDashboard({ tasks = [], maintenanceEntries = [] }
         const inProgress = children.filter(
           (c) => c.status === 'In Progress' && !c.dateFinished
         ).length;
-        const late = children.filter((c) => isLate(c)).length;
+        const late = children.filter((c) => isLate(c.targetDateFinish, c.dateFinished)).length;
         const notStarted = total - completed - inProgress;
         const pct = total ? Math.round((completed / total) * 100) : 0;
 
