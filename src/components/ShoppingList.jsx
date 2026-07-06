@@ -132,9 +132,11 @@ export default function ShoppingList({ tasks = [], onTaskUpdate, onTasksRefresh 
           title="Mark Task Complete?"
           message={`Mark "${confirmItem.task.name}" as complete?`}
           confirmText="Yes, Mark Complete"
-          cancelText="No, Just Remove Item"
+          secondaryText="No, Just Remove Item"
+          cancelText="Cancel"
           onConfirm={handleConfirmYes}
-          onCancel={handleConfirmNo}
+          onSecondary={handleConfirmNo}
+          onCancel={() => setConfirmItem(null)}
         />
       )}
     </div>

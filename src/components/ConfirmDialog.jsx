@@ -10,8 +10,10 @@ export default function ConfirmDialog({
   message,
   onConfirm,
   onCancel,
+  onSecondary, // Optional third action
   confirmText = 'Confirm',
   cancelText = 'Cancel',
+  secondaryText = 'Secondary',
 }) {
   const overlayRef = useRef(null);
 
@@ -44,6 +46,11 @@ export default function ConfirmDialog({
           <button className="btn btn-ghost" onClick={onCancel}>
             {cancelText}
           </button>
+          {onSecondary && (
+            <button className="btn btn-secondary" onClick={onSecondary}>
+              {secondaryText}
+            </button>
+          )}
           <button className="btn btn-danger" onClick={onConfirm}>
             {confirmText}
           </button>
