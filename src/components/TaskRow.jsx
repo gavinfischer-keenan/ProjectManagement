@@ -165,6 +165,9 @@ export default function TaskRow({
                 {task.name || 'Untitled'}
               </span>
             )}
+            {!canStart && (
+              <span className="blocked-icon" title={`Blocked by: ${blockedBy}`}>🔒</span>
+            )}
             {isSection && (
               <span className="section-badge" title="Section — groups tasks below it">§ SECTION</span>
             )}
