@@ -25,13 +25,12 @@ export default function TaskTable({
   onClearFocus,
 }) {
   /* ── State ──────────────────────────────────────────────── */
-  const [expandedIds, setExpandedIds] = useState(() => {
-    // Default: all parent IDs expanded
-    const parentIds = new Set();
-    for (const t of tasks) {
-      if (t.parentId) parentIds.add(t.parentId);
-    }
-    return parentIds;
+  const [collapsedIds, setCollapsedIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hawaii_pm_collapsed_sections');
+      if (saved) return new Set(JSON.parse(saved));
+    } catch(e) {}
+    return new Set();
   });
   const [editingTask, setEditingTask] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -42,16 +41,7 @@ export default function TaskTable({
   const tree = useMemo(() => buildTree(applyDependencyDepths(tasks)), [tasks]);
   const flatList = useMemo(() => flattenTree(tree), [tree]);
 
-  // Initialize expanded IDs when tasks change (add any new parent IDs)
-  useMemo(() => {
-    const parentIds = new Set(expandedIds);
-    for (const t of tasks) {
-      if (t.parentId) parentIds.add(t.parentId);
-    }
-    if (parentIds.size !== expandedIds.size) {
-      setExpandedIds(parentIds);
-    }
-  }, [tasks]);
+
 
   /* ── Visibility Filter (collapse) ──────────────────────── */
   const visibleRows = useMemo(() => {
@@ -62,14 +52,14 @@ export default function TaskTable({
         if (row.hasChildren) hiddenParents.add(row.id);
         return false;
       }
-      // If parent is not expanded, this row is hidden
-      if (row.parentId && !expandedIds.has(row.parentId)) {
+      // If parent is collapsed, this row is hidden
+      if (row.parentId && collapsedIds.has(row.parentId)) {
         if (row.hasChildren) hiddenParents.add(row.id);
         return false;
       }
       return true;
     });
-  }, [flatList, expandedIds]);
+  }, [flatList, collapsedIds]);
 
   /* ── Routing / Focus Effect ─────────────────────────────── */
   React.useEffect(() => {
@@ -80,7 +70,12 @@ export default function TaskTable({
       const expandAncestors = (taskId) => {
         const task = tasks.find(t => t.id === taskId);
         if (task && task.parentId) {
-          setExpandedIds(prev => new Set(prev).add(task.parentId));
+          setCollapsedIds(prev => {
+            const next = new Set(prev);
+            next.delete(task.parentId);
+            localStorage.setItem('hawaii_pm_collapsed_sections', JSON.stringify([...next]));
+            return next;
+          });
           expandAncestors(task.parentId);
         }
       };
@@ -112,16 +107,31 @@ export default function TaskTable({
 
   /* ── Handlers ───────────────────────────────────────────── */
   const handleToggleExpand = useCallback((id) => {
-    setExpandedIds((prev) => {
+    setCollapsedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
-        next.delete(id);
+        next.delete(id); // Expand
       } else {
-        next.add(id);
+        next.add(id); // Collapse
       }
+      localStorage.setItem('hawaii_pm_collapsed_sections', JSON.stringify([...next]));
       return next;
     });
   }, []);
+
+  const handleExpandAll = useCallback(() => {
+    setCollapsedIds(new Set());
+    localStorage.setItem('hawaii_pm_collapsed_sections', JSON.stringify([]));
+  }, []);
+
+  const handleCollapseAll = useCallback(() => {
+    const parentIds = new Set();
+    for (const t of tasks) {
+      if (t.parentId) parentIds.add(t.parentId);
+    }
+    setCollapsedIds(parentIds);
+    localStorage.setItem('hawaii_pm_collapsed_sections', JSON.stringify([...parentIds]));
+  }, [tasks]);
 
   const handleEdit = useCallback((task) => {
     setEditingTask(task);
@@ -509,7 +519,12 @@ export default function TaskTable({
         <table className="task-table">
           <thead>
             <tr>
-              <th style={{ width: 70 }}></th>
+              <th style={{ width: 70, textAlign: 'center' }}>
+                <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                  <button title="Expand All" onClick={handleExpandAll} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '1.2em', padding: '0 4px' }}>⏬</button>
+                  <button title="Collapse All" onClick={handleCollapseAll} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '1.2em', padding: '0 4px' }}>⏫</button>
+                </div>
+              </th>
               <th>Task Name</th>
               <th>Dep.</th>
               <th>Target Start</th>
@@ -529,7 +544,7 @@ export default function TaskTable({
                 id={`task-row-${row.id}`}
                 task={row}
                 depth={row.depth}
-                isExpanded={expandedIds.has(row.id)}
+                isExpanded={!collapsedIds.has(row.id)}
                 hasChildren={row.hasChildren}
                 onToggleExpand={handleToggleExpand}
                 onUpdate={onTaskUpdate}
