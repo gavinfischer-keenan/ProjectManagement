@@ -74,7 +74,7 @@ export default function ExportButton({ tasks = [], maintenanceEntries = [] }) {
     wsTasks['!cols'] = taskHeaders.map((h) => ({ wch: Math.max(h.length + 2, 14) }));
     XLSX.utils.book_append_sheet(wb, wsTasks, 'Tasks');
 
-    /* Sheet 2: Maintenance Log */
+    /* Sheet 2: Event Log */
     const maintHeaders = [
       'Description',
       'Linked Task',
@@ -101,7 +101,7 @@ export default function ExportButton({ tasks = [], maintenanceEntries = [] }) {
     const wsMaintData = [maintHeaders, ...maintRows];
     const wsMaint = XLSX.utils.aoa_to_sheet(wsMaintData);
     wsMaint['!cols'] = maintHeaders.map((h) => ({ wch: Math.max(h.length + 2, 14) }));
-    XLSX.utils.book_append_sheet(wb, wsMaint, 'Maintenance Log');
+    XLSX.utils.book_append_sheet(wb, wsMaint, 'Event Log');
 
     /* Trigger download */
     XLSX.writeFile(wb, 'Hawaii_Project_Plan_Export.xlsx');

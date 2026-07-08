@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { id: 'gantt',       icon: '📅', label: 'Gantt Timeline' },
   { id: 'daily',       icon: '🗓️', label: 'Daily Tasks' },
   { id: 'completed',   icon: '✅', label: 'Completed' },
-  { id: 'maintenance', icon: '🔧', label: 'Maintenance Log' },
+  { id: 'maintenance', icon: '📋', label: 'Event Log' },
   { id: 'vendors',     icon: '📇', label: 'Vendors' },
   { id: 'shopping',    icon: '🛒', label: 'Shopping List' },
 ];
@@ -26,7 +26,7 @@ const VIEW_TITLES = {
   gantt:       'Gantt Timeline',
   daily:       'Daily Tasks',
   completed:   'Completed Tasks',
-  maintenance: 'Maintenance Log',
+  maintenance: 'Event Log',
   vendors:     'Vendors',
   shopping:    'Shopping List',
   import:      'Import Data',

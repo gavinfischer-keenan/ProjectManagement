@@ -201,7 +201,7 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
     <div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-        <h2 className="section-title" style={{ marginBottom: 0 }}>🔧 Maintenance Log &amp; Milestones</h2>
+        <h2 className="section-title" style={{ marginBottom: 0 }}>📋 Event Log &amp; Milestones</h2>
         <button className="btn btn--primary" onClick={openAdd}>+ Add Entry</button>
       </div>
 
@@ -209,7 +209,7 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
       {showForm && (
         <div className="glass-panel fade-in-up" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>
-            {editId ? 'Edit Entry' : 'New Maintenance Entry'}
+            {editId ? 'Edit Entry' : 'New Event Entry'}
           </h3>
           <form className="modal-form" onSubmit={handleSubmit}>
 
@@ -306,7 +306,7 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
       {sections.length === 0 && (
         <div className="empty-state glass-panel fade-in-up">
           <div className="empty-state__icon">🔧</div>
-          <div className="empty-state__text">No maintenance entries yet</div>
+          <div className="empty-state__text">No event entries yet</div>
           <div className="empty-state__subtext">Add your first entry to start tracking repairs, installations, and milestones.</div>
         </div>
       )}

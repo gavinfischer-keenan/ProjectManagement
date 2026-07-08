@@ -378,7 +378,7 @@ export default function TaskEditModal({
                   <div className="form-group fade-in-up" style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(245,200,66,0.08)', border: '1px solid rgba(245,200,66,0.3)', borderRadius: '8px' }}>
                     <label className="form-label" style={{ color: 'var(--accent-gold, #f5c842)' }}>🏆 Milestone Achievement Text</label>
                     <input className="form-input" type="text" value={form.milestoneText} onChange={(e) => handleChange('milestoneText', e.target.value)} placeholder='e.g. "AC Pads ready for Units"' />
-                    <span className="form-help">Automatically added to the Maintenance Log when completed.</span>
+                    <span className="form-help">Automatically added to the Event Log when completed.</span>
                   </div>
                 )}
 
@@ -391,7 +391,7 @@ export default function TaskEditModal({
                   <div className="form-group fade-in-up" style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: '8px' }}>
                     <label className="form-label" style={{ color: 'var(--accent-teal, #2dd4bf)' }}>🔧 Hardware Details (Model / Serial)</label>
                     <input className="form-input" type="text" value={form.hardwareText} onChange={(e) => handleChange('hardwareText', e.target.value)} placeholder='e.g. "New Ceiling fan model xXXX"' />
-                    <span className="form-help">Automatically added to the Maintenance Log when completed.</span>
+                    <span className="form-help">Automatically added to the Event Log when completed.</span>
                   </div>
                 )}
 

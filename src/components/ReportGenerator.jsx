@@ -12,7 +12,7 @@ const FORMATS = [
     id: 'excel',
     icon: '📊',
     label: 'Excel (.xlsx)',
-    desc: 'Full workbook — Tasks + Maintenance Log sheets',
+    desc: 'Full workbook — Tasks + Event Log sheets',
   },
   {
     id: 'tsv',
@@ -216,14 +216,14 @@ export default function ReportGenerator({ tasks = [], maintenanceEntries = [] })
         if (includeMaint) {
           const wsMaint = XLSX.utils.aoa_to_sheet([mH, ...mR]);
           wsMaint['!cols'] = mH.map((h) => ({ wch: Math.max(h.length + 2, 14) }));
-          XLSX.utils.book_append_sheet(wb, wsMaint, 'Maintenance Log');
+          XLSX.utils.book_append_sheet(wb, wsMaint, 'Event Log');
         }
 
         XLSX.writeFile(wb, `Hawaii_Project_Report_${stamp}.xlsx`);
 
       } else if (selected === 'tsv') {
         let content = '=== TASKS ===\n' + toDelimited('\t', tH, tR);
-        if (includeMaint) content += '\n\n=== MAINTENANCE LOG ===\n' + toDelimited('\t', mH, mR);
+        if (includeMaint) content += '\n\n=== EVENT LOG ===\n' + toDelimited('\t', mH, mR);
         download(`Hawaii_Project_Report_${stamp}.tsv`, content, 'text/tab-separated-values');
 
       } else if (selected === 'csv' || selected === 'google') {
@@ -293,7 +293,7 @@ export default function ReportGenerator({ tasks = [], maintenanceEntries = [] })
             <p className="report-options-heading">Include in report:</p>
             <label className="report-option-check">
               <input type="checkbox" checked={includeMaint} onChange={(e) => setIncludeMaint(e.target.checked)} />
-              <span>Maintenance Log</span>
+              <span>Event Log</span>
             </label>
             <label className="report-option-check" >
               <input type="checkbox" checked={includeGantt} onChange={(e) => setIncludeGantt(e.target.checked)} />
