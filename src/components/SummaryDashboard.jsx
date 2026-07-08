@@ -143,10 +143,6 @@ export default function SummaryDashboard({ tasks = [], maintenanceEntries = [], 
             <span className="dash-mini-num" style={{ color: '#ef4444' }}>{stats.late}</span>
             <span className="dash-mini-lbl">Late</span>
           </div>
-          <div className="dash-mini-pill">
-            <span className="dash-mini-num" style={{ color: '#f59e0b' }}>{maintenanceEntries.length}</span>
-            <span className="dash-mini-lbl">Maint. Logs</span>
-          </div>
         </div>
       </div>
 
