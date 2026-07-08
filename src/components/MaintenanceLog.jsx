@@ -384,7 +384,7 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
                             <span style={{ color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>{formatDate(r.dateOfRepair)}</span>
                             <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>·</span>
                             <span style={{ color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {r.notes || r.description || 'No notes'}
+                              {r.description || r.notes || 'No notes'}
                             </span>
                           </div>
                           <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0, marginLeft: '0.5rem' }}>
