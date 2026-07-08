@@ -237,6 +237,8 @@ export default function TaskTable({
         status: 'Not Started',
         percentComplete: 0,
         targetDateFinish: prereqFinish || editingTask.targetDateStart || null,
+        dependsOnTaskId: editingTask.dependsOnTaskId || null,
+        dependency: editingTask.dependency || '',
       };
       const created = await onTaskCreate(newTask);
       if (onTasksRefresh) {
