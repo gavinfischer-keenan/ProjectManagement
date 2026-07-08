@@ -81,8 +81,7 @@ export default function TaskRow({
   const rollup = needsRollup ? calculateRollup(task, allTasks) : null;
   const displayPercent = rollup ? rollup.percentComplete : (task.percentComplete || 0);
   const displayStatus  = rollup ? rollup.status : (task.status || 'Not Started');
-  
-  const totalDepth = depth + (task.depDepth || 0);
+  const totalDepth = depth;
 
   /* ── Drag state classes ─────────────────────────────────── */
   const isDragging = dragState.dragId === String(task.id);
