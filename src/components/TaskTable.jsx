@@ -17,7 +17,6 @@ export default function TaskTable({
   onTaskCreate,
   onShowMaintenancePrompt,
   onTasksRefresh,
-  onMilestoneComplete,
   onVendorCreate,
   focusedSectionId,
   focusedTaskId,
@@ -188,24 +187,13 @@ export default function TaskTable({
 
       await onTaskUpdate(editingTask.id, updatedData);
 
-      // If this is a milestone task just marked Completed, log it
-      if (
-        updatedData.isMilestone &&
-        updatedData.status === 'Completed' &&
-        editingTask.status !== 'Completed' &&
-        onMilestoneComplete
-      ) {
-        const milestoneText = updatedData.milestoneText || editingTask.milestoneText || editingTask.name;
-        await onMilestoneComplete(editingTask, milestoneText, tasks);
-      }
-
       if (onTasksRefresh) {
         await onTasksRefresh();
       }
 
       setEditingTask(null);
     },
-    [editingTask, onTaskUpdate, tasks, onTasksRefresh, onMilestoneComplete]
+    [editingTask, onTaskUpdate, tasks, onTasksRefresh]
   );
 
   /**
