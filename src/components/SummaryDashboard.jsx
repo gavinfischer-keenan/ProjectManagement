@@ -72,13 +72,15 @@ export default function SummaryDashboard({ tasks = [], maintenanceEntries = [], 
   }, [tasks]);
 
   /* ── Recent completed ────────────────────────────────── */
-  const recentCompleted = useMemo(() =>
-    leafTasks
-      .filter((t) => t.dateFinished)
+  const recentCompleted = useMemo(() => {
+    const n = new Date();
+    const today = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+    
+    return leafTasks
+      .filter((t) => t.dateFinished && t.dateFinished <= today)
       .sort((a, b) => (b.dateFinished || '').localeCompare(a.dateFinished || ''))
-      .slice(0, 8),
-    [leafTasks]
-  );
+      .slice(0, 8);
+  }, [leafTasks]);
 
   if (leafTasks.length === 0) {
     return (
