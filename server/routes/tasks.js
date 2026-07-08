@@ -152,6 +152,7 @@ router.post('/', (req, res) => {
       milestoneText: req.body.milestoneText ?? '',
       isHardware: req.body.isHardware ?? false,
       hardwareText: req.body.hardwareText ?? '',
+      createdAt: new Date().toISOString(),
     };
 
     tasks.push(newTask);

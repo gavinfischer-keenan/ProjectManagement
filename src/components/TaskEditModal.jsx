@@ -137,11 +137,20 @@ export default function TaskEditModal({
     });
   };
 
+  const todayStr = () => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  };
+
   const handleDateFinishedChange = (value) => {
+    let finalValue = value;
+    if (finalValue > todayStr()) {
+      finalValue = todayStr();
+    }
     const wasEmpty = !prevDateFinished.current;
-    const nowFilled = !!value;
+    const nowFilled = !!finalValue;
     // Auto-sync: filling finish date → mark Completed
-    const updates = { dateFinished: value };
+    const updates = { dateFinished: finalValue };
     if (nowFilled) {
       updates.status = 'Completed';
       updates.percentComplete = 100;
@@ -151,12 +160,7 @@ export default function TaskEditModal({
       }
     }
     setForm((prev) => ({ ...prev, ...updates }));
-    prevDateFinished.current = value;
-  };
-
-  const todayStr = () => {
-    const n = new Date();
-    return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+    prevDateFinished.current = finalValue;
   };
 
   const handleStatusChange = (value) => {
@@ -364,6 +368,16 @@ export default function TaskEditModal({
                   <input className="form-checkbox" type="checkbox" id="delayed" checked={form.delayed} onChange={(e) => handleChange('delayed', e.target.checked)} />
                   <label htmlFor="delayed" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal' }}>Mark as Delayed</label>
                 </div>
+
+                {/* Creation Date (Read-only) */}
+                {task.createdAt && (
+                  <div className="form-group" style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
+                    <label className="form-label" style={{ color: 'var(--text-muted)' }}>Creation Date (System)</label>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '0.5rem 0' }}>
+                      {new Date(task.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
