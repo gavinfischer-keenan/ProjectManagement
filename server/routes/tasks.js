@@ -178,7 +178,7 @@ router.put('/:id', (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    const oldFinish = tasks[index].targetDateFinish;
+    const oldEffectiveFinish = tasks[index].dateFinished || tasks[index].targetDateFinish;
 
     // Merge only supplied fields
     const updatable = [
@@ -195,12 +195,12 @@ router.put('/:id', (req, res) => {
       }
     }
 
-    // Force lock-step: if a dependency is set, inherit its finish date as our start date
+    // Force lock-step: if a dependency is set, inherit its effective finish date as our start date
     if (tasks[index].dependsOnTaskId) {
       const predecessor = tasks.find((t) => t.id === tasks[index].dependsOnTaskId);
-      if (predecessor && predecessor.targetDateFinish) {
-        const forcedStart = predecessor.targetDateFinish;
-        if (tasks[index].targetDateStart !== forcedStart) {
+      if (predecessor) {
+        const forcedStart = predecessor.dateFinished || predecessor.targetDateFinish;
+        if (forcedStart && tasks[index].targetDateStart !== forcedStart) {
           const oldStartForThisTask = tasks[index].targetDateStart;
           tasks[index].targetDateStart = forcedStart;
           // If we had an old start, shift finish date by the same delta to preserve duration
@@ -212,9 +212,9 @@ router.put('/:id', (req, res) => {
       }
     }
 
-    const newFinish = tasks[index].targetDateFinish;
-    if (oldFinish && newFinish && oldFinish !== newFinish) {
-      const delta = getDeltaDays(oldFinish, newFinish);
+    const newEffectiveFinish = tasks[index].dateFinished || tasks[index].targetDateFinish;
+    if (oldEffectiveFinish && newEffectiveFinish && oldEffectiveFinish !== newEffectiveFinish) {
+      const delta = getDeltaDays(oldEffectiveFinish, newEffectiveFinish);
       if (delta !== 0) {
         cascadeDates(tasks[index].id, delta, tasks);
       }
