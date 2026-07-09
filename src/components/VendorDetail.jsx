@@ -167,6 +167,10 @@ export default function VendorDetail({
               <input className="form-input" value={form.phone} onChange={e => handleFieldChange('phone', e.target.value)} placeholder="808-555-1234" />
             </div>
             <div className="form-group">
+              <label className="form-label">Email</label>
+              <input className="form-input" type="email" value={form.email || ''} onChange={e => handleFieldChange('email', e.target.value)} placeholder="email@example.com" />
+            </div>
+            <div className="form-group">
               <label className="form-label">Account Number</label>
               <input className="form-input" value={form.accountNumber} onChange={e => handleFieldChange('accountNumber', e.target.value)} placeholder="Account / Customer #" />
             </div>

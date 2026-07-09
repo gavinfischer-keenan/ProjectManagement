@@ -16,7 +16,7 @@ export default function VendorPanel({
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'tile'
   const [selectedVendorId, setSelectedVendorId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newForm, setNewForm] = useState({ name: '', company: '', phone: '', address: '', accountNumber: '', notes: '' });
+  const [newForm, setNewForm] = useState({ name: '', company: '', email: '', phone: '', address: '', accountNumber: '', notes: '' });
   const [addSaving, setAddSaving] = useState(false);
 
   /* ── Sort vendors alphabetically by company then name ──── */
@@ -38,7 +38,7 @@ export default function VendorPanel({
       const created = await createVendor(newForm);
       onVendorsChange([...vendors, created]);
       setShowAddForm(false);
-      setNewForm({ name: '', company: '', phone: '', address: '', accountNumber: '', notes: '' });
+      setNewForm({ name: '', company: '', email: '', phone: '', address: '', accountNumber: '', notes: '' });
       setSelectedVendorId(created.id);
     } finally {
       setAddSaving(false);
@@ -125,6 +125,10 @@ export default function VendorPanel({
               <input className="form-input" value={newForm.phone} onChange={e => setNewForm(p => ({ ...p, phone: e.target.value }))} placeholder="808-555-1234" />
             </div>
             <div className="form-group">
+              <label className="form-label">Email</label>
+              <input className="form-input" type="email" value={newForm.email} onChange={e => setNewForm(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" />
+            </div>
+            <div className="form-group">
               <label className="form-label">Account #</label>
               <input className="form-input" value={newForm.accountNumber} onChange={e => setNewForm(p => ({ ...p, accountNumber: e.target.value }))} placeholder="Optional" />
             </div>
@@ -160,6 +164,7 @@ export default function VendorPanel({
                 <th>Company</th>
                 <th>Name</th>
                 <th>Phone</th>
+                <th>Email</th>
                 <th style={{ width: 60 }}>Tasks</th>
               </tr>
             </thead>
@@ -176,6 +181,7 @@ export default function VendorPanel({
                     <td className="vendor-list-company">{v.company || '—'}</td>
                     <td className="vendor-list-name">{v.name || '—'}</td>
                     <td className="vendor-list-phone">{v.phone || '—'}</td>
+                    <td className="vendor-list-email">{v.email || '—'}</td>
                     <td className="vendor-list-tasks">
                       {taskCount > 0 && <span className="vendor-task-count">{taskCount}</span>}
                     </td>
@@ -203,6 +209,7 @@ export default function VendorPanel({
                 <div className="vendor-tile-company">{v.company || v.name || 'Vendor'}</div>
                 {v.company && v.name && <div className="vendor-tile-name">{v.name}</div>}
                 {v.phone && <div className="vendor-tile-phone">📞 {v.phone}</div>}
+                {v.email && <div className="vendor-tile-email" style={{ fontSize: '0.85em', opacity: 0.8, marginBottom: '0.25rem' }}>📧 {v.email}</div>}
                 {v.address && <div className="vendor-tile-address">📍 {v.address}</div>}
                 {v.accountNumber && <div className="vendor-tile-account">Acct: {v.accountNumber}</div>}
                 <div className="vendor-tile-meta">

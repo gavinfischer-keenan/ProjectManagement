@@ -68,6 +68,7 @@ router.post('/', (req, res) => {
       id: uuidv4(),
       name: req.body.name || '',
       company: req.body.company || '',
+      email: req.body.email || '',
       phone: req.body.phone || '',
       address: req.body.address || '',
       accountNumber: req.body.accountNumber || '',
@@ -98,7 +99,7 @@ router.put('/:id', (req, res) => {
       return res.status(404).json({ error: 'Vendor not found' });
     }
 
-    const updatable = ['name', 'company', 'phone', 'address', 'accountNumber', 'notes'];
+    const updatable = ['name', 'company', 'email', 'phone', 'address', 'accountNumber', 'notes'];
     for (const field of updatable) {
       if (field in req.body) {
         vendors[index][field] = req.body[field];
