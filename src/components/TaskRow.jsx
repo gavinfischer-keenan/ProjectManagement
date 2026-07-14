@@ -20,6 +20,7 @@ export default function TaskRow({
   onAddSubtask,
   onShowMaintenancePrompt,
   allTasks,
+  owners = [],
   dragState,
   onDragStart,
   onDragOver,
@@ -29,6 +30,7 @@ export default function TaskRow({
   onIndent,
   onOutdent,
   isFirstRow,
+  readOnly = false,
 }) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(task.name || '');
@@ -63,11 +65,24 @@ export default function TaskRow({
     }
   };
 
-  /* ── Derived data ───────────────────────────────────────── */
-  const baseRowClass = getRowClass(task);
+  /* ── Derived data ────────────────────────────────────────── */
   const isSection    = task.taskType === 'section';
   // We still calculate rollups for tasks with children, but they no longer look like sections.
   const needsRollup = isSection || hasChildren;
+  
+  // Rollup for parent tasks and sections
+  const rollup = needsRollup ? calculateRollup(task, allTasks) : null;
+  const displayPercent = rollup ? rollup.percentComplete : (task.percentComplete || 0);
+  const displayStatus  = rollup ? rollup.status : (task.status || 'Not Started');
+  
+  const displayTask = {
+    ...task,
+    percentComplete: displayPercent,
+    status: displayStatus,
+    dateFinished: rollup ? (rollup.percentComplete === 100 ? (task.dateFinished || '2099-01-01') : null) : task.dateFinished,
+  };
+
+  const baseRowClass = getRowClass(displayTask);
   
   const rowClass = [
     baseRowClass,
@@ -77,10 +92,6 @@ export default function TaskRow({
   const finishCellClass = getDateCellClass(task.dateFinished, task.targetDateFinish);
   const { canStart, blockedBy } = canStartTask(task, allTasks);
 
-  // Rollup for parent tasks and sections
-  const rollup = needsRollup ? calculateRollup(task, allTasks) : null;
-  const displayPercent = rollup ? rollup.percentComplete : (task.percentComplete || 0);
-  const displayStatus  = rollup ? rollup.status : (task.status || 'Not Started');
   const totalDepth = depth;
 
   /* ── Drag state classes ─────────────────────────────────── */
@@ -111,14 +122,16 @@ export default function TaskRow({
       <td style={{ whiteSpace: 'nowrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
           {/* Outdent */}
-          <button
-            className="indent-btn"
-            onClick={() => onOutdent(task.id)}
-            disabled={!task.parentId}
-            title="Outdent (remove from parent)"
-          >
-            ◀
-          </button>
+          {!readOnly && (
+            <button
+              className="indent-btn"
+              onClick={() => onOutdent(task.id)}
+              disabled={!task.parentId}
+              title="Outdent (remove from parent)"
+            >
+              ◀
+            </button>
+          )}
           {/* Expand toggle or drag handle */}
           {hasChildren ? (
             <button
@@ -129,17 +142,19 @@ export default function TaskRow({
               <span className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>▶</span>
             </button>
           ) : (
-            <span className="drag-handle" title="Drag to reorder">⠿</span>
+            !readOnly && <span className="drag-handle" title="Drag to reorder">⠿</span>
           )}
           {/* Indent */}
-          <button
-            className="indent-btn"
-            onClick={() => onIndent(task.id)}
-            disabled={isFirstRow}
-            title="Indent (make dependent on row above)"
-          >
-            ▶
-          </button>
+          {!readOnly && (
+            <button
+              className="indent-btn"
+              onClick={() => onIndent(task.id)}
+              disabled={isFirstRow}
+              title="Indent (make dependent on row above)"
+            >
+              ▶
+            </button>
+          )}
         </div>
       </td>
 
@@ -176,16 +191,16 @@ export default function TaskRow({
                 ({rollup.completedChildren}/{rollup.totalChildren} done)
               </span>
             )}
-            {isSection && rollup && rollup.totalChildren === 0 && (
+            {isSection && rollup && rollup.totalChildren === 0 && !readOnly && (
               <span className="section-empty-hint">drag tasks here or use indent ▶</span>
             )}
-            {isSection && (
+            {isSection && !readOnly && (
               <button 
                 className="btn-add-subtask-inline"
                 onClick={() => onAddSubtask(task.id)}
                 title="Add task in this section"
               >
-                ⊞ Add Subtask
+                + Add Task
               </button>
             )}
           </div>
@@ -217,6 +232,18 @@ export default function TaskRow({
               {!canStart && (
                 <span className="blocked-icon" title={`Blocked by: ${blockedBy}`}>🔒</span>
               )}
+              {task.ownerId && (() => {
+                const owner = owners.find(o => o.id === task.ownerId);
+                if (!owner) return null;
+                return (
+                  <span
+                    className="owner-badge"
+                    title={`Owner: ${owner.name}`}
+                  >
+                    {owner.name[0].toUpperCase()}
+                  </span>
+                );
+              })()}
             </div>
           </td>
 
@@ -255,24 +282,28 @@ export default function TaskRow({
 
       {/* Edit */}
       <td>
-        <button
-          className="btn-icon"
-          onClick={() => onEdit(task)}
-          title="Edit task"
-        >
-          ✏️
-        </button>
+        {!readOnly && (
+          <button
+            className="btn-icon"
+            onClick={() => onEdit(task)}
+            title="Edit task"
+          >
+            ✏️
+          </button>
+        )}
       </td>
 
       {/* Delete */}
       <td>
-        <button
-          className="btn-icon danger"
-          onClick={() => onDelete(task)}
-          title="Delete task"
-        >
-          🗑️
-        </button>
+        {!readOnly && (
+          <button
+            className="btn-icon danger"
+            onClick={() => onDelete(task)}
+            title="Delete task"
+          >
+            🗑️
+          </button>
+        )}
       </td>
     </tr>
   );

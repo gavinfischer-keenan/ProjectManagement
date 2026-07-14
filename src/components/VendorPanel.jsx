@@ -5,18 +5,19 @@
 import React, { useState } from 'react';
 import VendorDetail from './VendorDetail.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
-import { createVendor, updateVendor, deleteVendor } from '../api/client.js';
+import { createVendor, updateVendor, deleteVendor, fetchVendors } from '../api/client.js';
 
 export default function VendorPanel({
   vendors = [],
   onVendorsChange,
   tasks = [],
   onCreateTask,
+  readOnly = false,
 }) {
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'tile'
   const [selectedVendorId, setSelectedVendorId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newForm, setNewForm] = useState({ name: '', company: '', email: '', phone: '', address: '', accountNumber: '', notes: '' });
+  const [newForm, setNewForm] = useState({ name: '', company: '', email: '', phone: '', address: '', accountNumber: '', notes: '', onlineAccess: '', username: '', password: '' });
   const [addSaving, setAddSaving] = useState(false);
 
   /* ── Sort vendors alphabetically by company then name ──── */
@@ -38,7 +39,7 @@ export default function VendorPanel({
       const created = await createVendor(newForm);
       onVendorsChange([...vendors, created]);
       setShowAddForm(false);
-      setNewForm({ name: '', company: '', email: '', phone: '', address: '', accountNumber: '', notes: '' });
+      setNewForm({ name: '', company: '', email: '', phone: '', address: '', accountNumber: '', notes: '', onlineAccess: '', username: '', password: '' });
       setSelectedVendorId(created.id);
     } finally {
       setAddSaving(false);
@@ -66,7 +67,7 @@ export default function VendorPanel({
         onUpdate={async (id, updates) => {
           await handleUpdate(id, updates);
           // Refresh local copy so detail view re-renders with new values
-          const refreshed = await fetch('/api/vendors').then(r => r.json());
+          const refreshed = await fetchVendors();
           onVendorsChange(refreshed);
         }}
         onDelete={handleDelete}
@@ -99,9 +100,11 @@ export default function VendorPanel({
               ⊞
             </button>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowAddForm(p => !p)}>
-            + Add Vendor
-          </button>
+          {!readOnly && (
+            <button className="btn btn-primary btn-sm" onClick={() => setShowAddForm(p => !p)}>
+              + Add Vendor
+            </button>
+          )}
         </div>
       </div>
 
@@ -136,6 +139,20 @@ export default function VendorPanel({
           <div className="form-group">
             <label className="form-label">Address</label>
             <input className="form-input" value={newForm.address} onChange={e => setNewForm(p => ({ ...p, address: e.target.value }))} placeholder="Street, City, State" />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Online Access Point</label>
+              <input className="form-input" value={newForm.onlineAccess} onChange={e => setNewForm(p => ({ ...p, onlineAccess: e.target.value }))} placeholder="https://..." />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Username</label>
+              <input className="form-input" value={newForm.username} onChange={e => setNewForm(p => ({ ...p, username: e.target.value }))} placeholder="Username" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Password/PIN</label>
+              <input className="form-input" value={newForm.password} onChange={e => setNewForm(p => ({ ...p, password: e.target.value }))} placeholder="Password or PIN" />
+            </div>
           </div>
           <div className="vendor-add-form-actions">
             <button className="btn btn-ghost btn-sm" onClick={() => setShowAddForm(false)}>Cancel</button>

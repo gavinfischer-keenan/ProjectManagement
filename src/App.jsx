@@ -12,12 +12,15 @@ import MaintenanceLog from './components/MaintenanceLog.jsx';
 import ImportWizard from './components/ImportWizard.jsx';
 import GanttTimeline from './components/GanttTimeline.jsx';
 import VendorPanel from './components/VendorPanel.jsx';
+import OwnerPanel from './components/OwnerPanel.jsx';
 import ShoppingList from './components/ShoppingList.jsx';
+import PdfReportView from './components/PdfReportView.jsx';
 import {
   fetchTasks, fetchMaintenance,
   updateTask, deleteTask, createTask,
   createMaintenance, updateMaintenance, deleteMaintenance,
   fetchVendors, createVendor,
+  fetchOwners, createOwner,
 } from './api/client.js';
 
 const VIEWS = {
@@ -28,6 +31,7 @@ const VIEWS = {
   completed:    'completed',
   maintenance:  'maintenance',
   vendors:      'vendors',
+  owners:       'owners',
   shopping:     'shopping',
   import:       'import',
 };
@@ -37,7 +41,10 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [maintenanceEntries, setMaintenanceEntries] = useState([]);
   const [vendors, setVendors] = useState([]);
+  const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastSynced, setLastSynced] = useState(null);  // timestamp of last background refresh
+  const [activeModalCount, setActiveModalCount] = useState(0); // pause poll when modals open
 
   /* Dashboard Navigation State */
   const [focusedSectionId, setFocusedSectionId] = useState(null);
@@ -73,14 +80,35 @@ export default function App() {
     }
   }, []);
 
+  const refreshOwners = useCallback(async () => {
+    try {
+      const data = await fetchOwners();
+      setOwners(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to fetch owners:', err);
+    }
+  }, []);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      await Promise.all([refreshTasks(), refreshMaintenance(), refreshVendors()]);
+      await Promise.all([refreshTasks(), refreshMaintenance(), refreshVendors(), refreshOwners()]);
       setLoading(false);
+      setLastSynced(Date.now());
     };
     load();
-  }, [refreshTasks, refreshMaintenance, refreshVendors]);
+  }, [refreshTasks, refreshMaintenance, refreshVendors, refreshOwners]);
+
+  /* ── Background Poll — 30s, paused while any modal is open ── */
+  useEffect(() => {
+    const INTERVAL_MS = 30_000;
+    const id = setInterval(async () => {
+      if (activeModalCount > 0) return; // don't refresh mid-edit
+      await Promise.all([refreshTasks(), refreshVendors(), refreshOwners()]);
+      setLastSynced(Date.now());
+    }, INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [activeModalCount, refreshTasks, refreshVendors, refreshOwners]);
 
   /* ── Task Handlers ──────────────────────────────────────── */
   const handleTaskUpdate = useCallback(async (id, updates) => {
@@ -92,13 +120,6 @@ export default function App() {
       console.error('Failed to update task:', err);
     }
   }, [refreshTasks]);
-
-  /* Callback used by DailyTaskList where the updated task object is passed directly */
-  const handleDailyTaskUpdate = useCallback((updatedTask) => {
-    if (updatedTask && updatedTask.id) {
-      setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? { ...t, ...updatedTask } : t)));
-    }
-  }, []);
 
   const handleTaskDelete = useCallback(async (id) => {
     try {
@@ -127,6 +148,17 @@ export default function App() {
       return created;
     } catch (err) {
       console.error('Failed to create vendor stub:', err);
+      return null;
+    }
+  }, []);
+
+  const handleOwnerCreate = useCallback(async (stub) => {
+    try {
+      const created = await createOwner(stub);
+      setOwners(prev => [...prev, created]);
+      return created;
+    } catch (err) {
+      console.error('Failed to create owner stub:', err);
       return null;
     }
   }, []);
@@ -171,12 +203,14 @@ export default function App() {
           <TaskTable
             tasks={tasks}
             vendors={vendors}
+            owners={owners}
             maintenanceEntries={maintenanceEntries}
             onTaskUpdate={handleTaskUpdate}
             onTaskDelete={handleTaskDelete}
             onTaskCreate={handleTaskCreate}
             onTasksRefresh={refreshTasks}
             onVendorCreate={handleVendorCreate}
+            onOwnerCreate={handleOwnerCreate}
             focusedSectionId={focusedSectionId}
             focusedTaskId={focusedTaskId}
             vendorTaskDefaults={vendorTaskDefaults}
@@ -186,9 +220,10 @@ export default function App() {
 
       case VIEWS.dashboard:
         return (
-          <SummaryDashboard 
-            tasks={tasks} 
-            maintenanceEntries={maintenanceEntries} 
+          <SummaryDashboard
+            tasks={tasks}
+            owners={owners}
+            maintenanceEntries={maintenanceEntries}
             onFocusSection={(id) => {
               setFocusedSectionId(id);
               setCurrentView(VIEWS.tracker);
@@ -204,7 +239,8 @@ export default function App() {
         return (
           <DailyTaskList
             tasks={tasks}
-            onTaskUpdate={handleDailyTaskUpdate}
+            owners={owners}
+            onTaskUpdate={handleTaskUpdate}
           />
         );
 
@@ -214,9 +250,9 @@ export default function App() {
       case VIEWS.gantt:
         return (
           <div className="gantt-full-view">
-            <GanttTimeline 
-              tasks={tasks} 
-              fullPage 
+            <GanttTimeline
+              tasks={tasks}
+              fullPage
               onFocusTask={(id) => {
                 setFocusedTaskId(id);
                 setCurrentView(VIEWS.tracker);
@@ -252,6 +288,19 @@ export default function App() {
           />
         );
 
+      case VIEWS.owners:
+        return (
+          <OwnerPanel
+            owners={owners}
+            onOwnersChange={setOwners}
+            tasks={tasks}
+            onFocusTask={(id) => {
+              setFocusedTaskId(id);
+              setCurrentView(VIEWS.tracker);
+            }}
+          />
+        );
+
       case VIEWS.shopping:
         return (
           <ShoppingList
@@ -266,10 +315,13 @@ export default function App() {
     }
   };
 
-  /* ── Render ─────────────────────────────────────────────── */
+  /* ── Render ─────────────────────────────────────────────────── */
   return (
-    <Layout currentView={currentView} onNavigate={setCurrentView} tasks={tasks} maintenanceEntries={maintenanceEntries}>
-      {renderContent()}
-    </Layout>
+    <>
+      <Layout currentView={currentView} onNavigate={setCurrentView} tasks={tasks} maintenanceEntries={maintenanceEntries} lastSynced={lastSynced}>
+        {renderContent()}
+      </Layout>
+      <PdfReportView tasks={tasks} maintenanceEntries={maintenanceEntries} vendors={vendors} owners={owners} />
+    </>
   );
 }

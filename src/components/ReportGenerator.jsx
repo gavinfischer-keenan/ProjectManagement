@@ -5,9 +5,16 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
+import html2pdf from 'html2pdf.js';
 import { durationDays } from '../utils/dateUtils.js';
 
 const FORMATS = [
+  {
+    id: 'pdf',
+    icon: '📑',
+    label: 'Information Send (PDF)',
+    desc: 'Full project report ready to print or email',
+  },
   {
     id: 'excel',
     icon: '📊',
@@ -59,6 +66,11 @@ export default function ReportGenerator({ tasks = [], maintenanceEntries = [] })
     return task.targetDateFinish < new Date().toISOString().slice(0, 10) ? 'Yes' : 'No';
   }
 
+  const [pdfModalState, setPdfModalState] = useState('idle'); // 'idle', 'generating', 'ready'
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+  const [pdfFilename, setPdfFilename] = useState('');
+  const [timeLeft, setTimeLeft] = useState(120);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     if (!open) return;
@@ -73,6 +85,27 @@ export default function ReportGenerator({ tasks = [], maintenanceEntries = [] })
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
+
+  // Auto-revoke PDF blob after 2 minutes to prevent memory leaks/bloat
+  useEffect(() => {
+    let timerId;
+    if (pdfModalState === 'ready' && pdfBlobUrl) {
+      setTimeLeft(120);
+      timerId = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerId);
+            URL.revokeObjectURL(pdfBlobUrl);
+            setPdfBlobUrl(null);
+            setPdfModalState('idle');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timerId);
+  }, [pdfModalState, pdfBlobUrl]);
 
   // Build task rows data (shared across formats)
   const buildTaskRows = useCallback(() => {
@@ -194,7 +227,62 @@ export default function ReportGenerator({ tasks = [], maintenanceEntries = [] })
     try {
       const { headers: tH, rows: tR } = buildTaskRows();
       const { headers: mH, rows: mR } = buildMaintRows();
-      const stamp = new Date().toISOString().slice(0, 10);
+      
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const MM = pad(now.getMonth() + 1);
+      const DD = pad(now.getDate());
+      const YY = String(now.getFullYear()).slice(-2);
+      const HR = pad(now.getHours());
+      const MN = pad(now.getMinutes());
+      const stamp = `${MM}_${DD}_${YY}__${HR}__${MN}`;
+      const baseFilename = `HAWAII_Project_Status_${stamp}`;
+
+      if (selected === 'pdf') {
+        setPdfModalState('generating');
+        setOpen(false);
+
+        // Allow UI to update and show "Generating..." modal before freezing
+        setTimeout(() => {
+          const element = document.getElementById('pdf-report-container');
+          if (!element) {
+            alert('Error: Could not find report container in DOM.');
+            setGenerating(false);
+            setPdfModalState('idle');
+            return;
+          }
+
+          const opt = {
+            margin:       0.5,
+            filename:     `${baseFilename}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+              scale: 2, 
+              useCORS: true, 
+              logging: false,
+              onclone: (clonedDoc) => {
+                const hiddenParent = clonedDoc.getElementById('pdf-report-hidden-parent');
+                if (hiddenParent) {
+                  hiddenParent.style.width = 'auto';
+                  hiddenParent.style.height = 'auto';
+                  hiddenParent.style.overflow = 'visible';
+                  hiddenParent.style.position = 'relative';
+                }
+              }
+            },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+          };
+
+          html2pdf().set(opt).from(element).output('bloburl').then((url) => {
+            setGenerating(false);
+            setPdfBlobUrl(url);
+            setPdfFilename(opt.filename);
+            setPdfModalState('ready');
+          });
+        }, 100);
+        
+        return; // async handling above
+      }
 
       if (selected === 'excel') {
         const wb = XLSX.utils.book_new();
@@ -219,19 +307,19 @@ export default function ReportGenerator({ tasks = [], maintenanceEntries = [] })
           XLSX.utils.book_append_sheet(wb, wsMaint, 'Event Log');
         }
 
-        XLSX.writeFile(wb, `Hawaii_Project_Report_${stamp}.xlsx`);
+        XLSX.writeFile(wb, `${baseFilename}.xlsx`);
 
       } else if (selected === 'tsv') {
         let content = '=== TASKS ===\n' + toDelimited('\t', tH, tR);
         if (includeMaint) content += '\n\n=== EVENT LOG ===\n' + toDelimited('\t', mH, mR);
-        download(`Hawaii_Project_Report_${stamp}.tsv`, content, 'text/tab-separated-values');
+        download(`${baseFilename}.tsv`, content, 'text/tab-separated-values');
 
       } else if (selected === 'csv' || selected === 'google') {
         let content = toDelimited(',', tH, tR);
-        download(`Hawaii_Project_Tasks_${stamp}.csv`, content, 'text/csv');
+        download(`${baseFilename}_Tasks.csv`, content, 'text/csv');
         if (includeMaint) {
           let mContent = toDelimited(',', mH, mR);
-          setTimeout(() => download(`Hawaii_Project_Maintenance_${stamp}.csv`, mContent, 'text/csv'), 300);
+          setTimeout(() => download(`${baseFilename}_Maintenance.csv`, mContent, 'text/csv'), 300);
         }
       }
 
@@ -308,6 +396,73 @@ export default function ReportGenerator({ tasks = [], maintenanceEntries = [] })
           >
             {generating ? '⏳ Generating…' : '⬇ Generate Report'}
           </button>
+        </div>
+      )}
+
+      {/* PDF Modal */}
+      {pdfModalState !== 'idle' && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 10000
+        }}>
+          <div style={{
+            background: 'var(--bg-panel)',
+            padding: '30px',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            textAlign: 'center',
+            minWidth: '350px',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            {pdfModalState === 'generating' ? (
+              <>
+                <h3 style={{ margin: '0 0 10px 0', color: 'var(--text-primary)', fontSize: '1.2rem' }}>Generating PDF...</h3>
+                <p style={{ margin: '0 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  Please wait, this may take a moment.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 style={{ margin: '0 0 10px 0', color: 'var(--text-primary)', fontSize: '1.2rem' }}>PDF Generated</h3>
+                <p style={{ margin: '0 0 25px 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  Your Information Send PDF is ready.
+                </p>
+                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => {
+                      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+                      setPdfBlobUrl(null);
+                      setPdfModalState('idle');
+                    }}
+                  >
+                    Cancel (Delete)
+                  </button>
+                  <a 
+                    href={pdfBlobUrl} 
+                    download={pdfFilename} 
+                    className="btn btn-primary"
+                    style={{ textDecoration: 'none', display: 'inline-block' }}
+                    onClick={() => {
+                      // Wait a beat before revoking so download can start
+                      setTimeout(() => {
+                        if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+                        setPdfBlobUrl(null);
+                        setPdfModalState('idle');
+                      }, 1000);
+                    }}
+                  >
+                    Download PDF
+                  </a>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--red)', marginTop: '20px' }}>
+                  To save browser memory, this PDF will automatically be deleted in <strong>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</strong>.
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

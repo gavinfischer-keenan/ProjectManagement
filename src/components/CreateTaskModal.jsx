@@ -15,6 +15,7 @@ export default function CreateTaskModal({
   defaultType = 'task',
   defaultParentId = null,
   prefill = null,   // { name, vendorId, notes } from vendor CRM
+  owners = [],
 }) {
   const [tab, setTab] = useState(defaultType === 'section' ? 'section' : 'task');
   const [form, setForm] = useState({
@@ -27,6 +28,7 @@ export default function CreateTaskModal({
     status: 'Not Started',
     percentComplete: 0,
     vendorId: prefill?.vendorId || '',
+    ownerId: '3fbda0f6-bca4-407b-a647-fda9e6ce777d',
   });
   const [error, setError] = useState('');
   const nameRef = useRef(null);
@@ -103,6 +105,7 @@ export default function CreateTaskModal({
       payload.duration         = form.duration !== '' ? Number(form.duration) : null;
       payload.status           = form.status;
       payload.percentComplete  = Number(form.percentComplete);
+      payload.ownerId          = form.ownerId || '3fbda0f6-bca4-407b-a647-fda9e6ce777d';
     } else {
       payload.status          = 'Not Started';
       payload.percentComplete = 0;
@@ -204,6 +207,17 @@ export default function CreateTaskModal({
                 <select className="form-select" value={form.status}
                   onChange={(e) => handleChange('status', e.target.value)}>
                   {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">👤 Owner</label>
+                <select className="form-select" value={form.ownerId}
+                  onChange={(e) => handleChange('ownerId', e.target.value)}>
+                  <option value="">— Unassigned —</option>
+                  {[...owners]
+                    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                    .map(o => <option key={o.id} value={o.id}>{o.name}</option>)
+                  }
                 </select>
               </div>
             </>

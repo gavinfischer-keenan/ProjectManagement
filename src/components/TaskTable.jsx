@@ -12,19 +12,29 @@ import ConfirmDialog from './ConfirmDialog.jsx';
 export default function TaskTable({
   tasks,
   vendors = [],
+  owners = [],
   onTaskUpdate,
   onTaskDelete,
   onTaskCreate,
   onShowMaintenancePrompt,
   onTasksRefresh,
   onVendorCreate,
+  onOwnerCreate,
   focusedSectionId,
   focusedTaskId,
   vendorTaskDefaults,
   onClearFocus,
+  forceCollapseSections = false,
+  forceExpandAll = false,
+  readOnly = false,
 }) {
   /* ── State ──────────────────────────────────────────────── */
   const [collapsedIds, setCollapsedIds] = useState(() => {
+    if (forceExpandAll) return new Set();
+    if (forceCollapseSections) {
+      const parentIds = tasks.filter(t => t.taskType === 'section' || tasks.some(c => c.parentId === t.id)).map(t => t.id);
+      return new Set(parentIds);
+    }
     try {
       const saved = localStorage.getItem('hawaii_pm_collapsed_sections');
       if (saved) return new Set(JSON.parse(saved));
@@ -44,6 +54,13 @@ export default function TaskTable({
 
   /* ── Visibility Filter (collapse) ──────────────────────── */
   const visibleRows = useMemo(() => {
+    let activeCollapsedIds = collapsedIds;
+    if (forceExpandAll) {
+      activeCollapsedIds = new Set();
+    } else if (forceCollapseSections) {
+      activeCollapsedIds = new Set(tasks.filter(t => t.taskType === 'section' || tasks.some(c => c.parentId === t.id)).map(t => t.id));
+    }
+
     const hiddenParents = new Set();
     return flatList.filter((row) => {
       // If any ancestor is collapsed, hide this row
@@ -52,13 +69,13 @@ export default function TaskTable({
         return false;
       }
       // If parent is collapsed, this row is hidden
-      if (row.parentId && collapsedIds.has(row.parentId)) {
+      if (row.parentId && activeCollapsedIds.has(row.parentId)) {
         if (row.hasChildren) hiddenParents.add(row.id);
         return false;
       }
       return true;
     });
-  }, [flatList, collapsedIds]);
+  }, [flatList, collapsedIds, forceExpandAll, forceCollapseSections, tasks]);
 
   /* ── Routing / Focus Effect ─────────────────────────────── */
   React.useEffect(() => {
@@ -496,12 +513,16 @@ export default function TaskTable({
       <div className="table-toolbar">
         <h2 className="table-title">Project Tasks</h2>
         <div className="toolbar-primary-actions">
-          <button className="btn btn-secondary btn-md" onClick={handleAddSection} title="Add a new section header">
-            § Add Section
-          </button>
-          <button className="btn btn-primary btn-md" onClick={handleAddTask}>
-            + Add Task
-          </button>
+          {!readOnly && (
+            <>
+              <button className="btn btn-secondary btn-md" onClick={handleAddSection} title="Add a new section header">
+                § Add Section
+              </button>
+              <button className="btn btn-primary btn-md" onClick={handleAddTask}>
+                + Add Task
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -543,6 +564,7 @@ export default function TaskTable({
                 onAddSubtask={handleAddSubtask}
                 onShowMaintenancePrompt={onShowMaintenancePrompt}
                 allTasks={tasks}
+                owners={owners}
                 dragState={dragState}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
@@ -552,6 +574,7 @@ export default function TaskTable({
                 onIndent={handleIndent}
                 onOutdent={handleOutdent}
                 isFirstRow={idx === 0}
+                readOnly={readOnly}
               />
             ))}
           </tbody>
@@ -562,6 +585,7 @@ export default function TaskTable({
       {createModal && (
         <CreateTaskModal
           allTasks={tasks}
+          owners={owners}
           defaultType={createModal.defaultType}
           defaultParentId={createModal.defaultParentId}
           prefill={createModal.prefill || null}
@@ -576,6 +600,7 @@ export default function TaskTable({
           task={editingTask}
           allTasks={tasks}
           vendors={vendors}
+          owners={owners}
           onSave={handleEditSave}
           onClose={() => setEditingTask(null)}
           onShowMaintenancePrompt={onShowMaintenancePrompt}

@@ -19,7 +19,17 @@ function readTasks() {
   try {
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
     const data = JSON.parse(raw);
-    return data.tasks || [];
+    const tasks = data.tasks || [];
+    // Auto-migrate: assign Gavin as owner for any task missing ownerId
+    let migrated = false;
+    for (const t of tasks) {
+      if (!t.ownerId) {
+        t.ownerId = '3fbda0f6-bca4-407b-a647-fda9e6ce777d';
+        migrated = true;
+      }
+    }
+    if (migrated) writeTasks(tasks);
+    return tasks;
   } catch {
     return [];
   }
@@ -152,6 +162,8 @@ router.post('/', (req, res) => {
       milestoneText: req.body.milestoneText ?? '',
       isHardware: req.body.isHardware ?? false,
       hardwareText: req.body.hardwareText ?? '',
+      vendorId: req.body.vendorId ?? null,
+      ownerId: req.body.ownerId ?? '3fbda0f6-bca4-407b-a647-fda9e6ce777d',
       createdAt: new Date().toISOString(),
     };
 
@@ -186,7 +198,7 @@ router.put('/:id', (req, res) => {
       'notes', 'targetDateStart', 'targetDateFinish', 'dateStarted',
       'dateFinished', 'duration', 'status', 'delayed', 'percentComplete',
       'isMilestone', 'milestoneText', 'isHardware', 'hardwareText', 'vendorId',
-      'supplies'
+      'ownerId', 'supplies'
     ];
 
     for (const field of updatable) {

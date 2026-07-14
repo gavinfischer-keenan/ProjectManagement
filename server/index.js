@@ -7,6 +7,7 @@ import tasksRouter from './routes/tasks.js';
 import maintenanceRouter from './routes/maintenance.js';
 import importRouter from './routes/import.js';
 import vendorsRouter from './routes/vendors.js';
+import ownersRouter from './routes/owners.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,6 +29,7 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/maintenance', maintenanceRouter);
 app.use('/api/import', importRouter);
 app.use('/api/vendors', vendorsRouter);
+app.use('/api/owners', ownersRouter);
 
 // Production: serve Vite build
 if (process.env.NODE_ENV === 'production') {

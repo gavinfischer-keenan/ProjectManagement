@@ -21,24 +21,41 @@ export function buildTree(flatTasks) {
   // Build parent-child relationships
   for (const task of flatTasks) {
     const node = taskMap.get(task.id);
-    if (task.parentId && taskMap.has(task.parentId)) {
-      taskMap.get(task.parentId).children.push(node);
-    } else {
-      roots.push(node);
+    
+    // If it depends on a task in the SAME section, it's a child of that task structurally
+    let nestedAsDependency = false;
+    if (task.dependsOnTaskId && taskMap.has(task.dependsOnTaskId)) {
+      const predecessor = taskMap.get(task.dependsOnTaskId);
+      if (predecessor.parentId === task.parentId) {
+        predecessor.children.push(node);
+        nestedAsDependency = true;
+      }
+    }
+
+    if (!nestedAsDependency) {
+      if (task.parentId && taskMap.has(task.parentId)) {
+        taskMap.get(task.parentId).children.push(node);
+      } else {
+        roots.push(node);
+      }
     }
   }
 
-  // Sort children at every level by `order`
-  const sortChildren = (nodes) => {
-    nodes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  // Sort children by `order`, except roots which are alphabetical
+  const sortChildren = (nodes, isRoot) => {
+    if (isRoot) {
+      nodes.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
+    } else {
+      nodes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
     for (const node of nodes) {
       if (node.children.length > 0) {
-        sortChildren(node.children);
+        sortChildren(node.children, false);
       }
     }
   };
 
-  sortChildren(roots);
+  sortChildren(roots, true);
   return roots;
 }
 
@@ -107,17 +124,18 @@ export function getDescendantIds(taskId, flatTasks) {
 
 /**
  * Collect all leaf descendants (tasks with no children) under a given parentId.
+ * Accepts a pre-built childrenMap for O(N) performance.
  */
-function getAllLeafDescendants(parentId, allTasks) {
-  const directChildren = allTasks.filter((t) => t.parentId === parentId);
+function getAllLeafDescendants(parentId, childrenMap) {
+  const directChildren = childrenMap.get(parentId) || [];
   if (directChildren.length === 0) return [];
   let leaves = [];
   for (const child of directChildren) {
-    const grandchildren = allTasks.filter((t) => t.parentId === child.id);
+    const grandchildren = childrenMap.get(child.id) || [];
     if (grandchildren.length === 0) {
       leaves.push(child); // It's a leaf
     } else {
-      leaves = leaves.concat(getAllLeafDescendants(child.id, allTasks));
+      leaves = leaves.concat(getAllLeafDescendants(child.id, childrenMap));
     }
   }
   return leaves;
@@ -126,9 +144,19 @@ function getAllLeafDescendants(parentId, allTasks) {
 /**
  * Calculate rollup stats for a parent/section from ALL descendant leaf tasks.
  * Returns { percentComplete, status, totalChildren, completedChildren, lateChildren }.
+ * Uses a pre-built childrenMap for O(N) leaf traversal.
  */
 export function calculateRollup(parentTask, allTasks) {
-  const directChildren = allTasks.filter((t) => t.parentId === parentTask.id);
+  // Build a children index once per call — O(N) total instead of O(N) per filter call
+  const childrenMap = new Map();
+  for (const t of allTasks) {
+    if (t.parentId) {
+      if (!childrenMap.has(t.parentId)) childrenMap.set(t.parentId, []);
+      childrenMap.get(t.parentId).push(t);
+    }
+  }
+
+  const directChildren = childrenMap.get(parentTask.id) || [];
   if (directChildren.length === 0) {
     return {
       percentComplete: parentTask.percentComplete || 0,
@@ -146,13 +174,14 @@ export function calculateRollup(parentTask, allTasks) {
   ).length;
 
   // For percentComplete, use all leaf descendants for accurate rollup
-  const leaves = getAllLeafDescendants(parentTask.id, allTasks);
+  const leaves = getAllLeafDescendants(parentTask.id, childrenMap);
   const totalLeaves = leaves.length || 1; // avoid div by zero
 
+  const now = new Date();
   const lateChildren = leaves.filter((c) => {
     if (c.dateFinished) return false;
     if (!c.targetDateFinish) return false;
-    return new Date(c.targetDateFinish) < new Date();
+    return new Date(c.targetDateFinish) < now;
   }).length;
 
   const percentComplete = Math.round(

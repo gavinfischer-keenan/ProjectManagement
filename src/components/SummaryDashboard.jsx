@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { isLate, formatDate } from '../utils/dateUtils.js';
 
-export default function SummaryDashboard({ tasks = [], maintenanceEntries = [], onFocusSection, onFocusTask }) {
+export default function SummaryDashboard({ tasks = [], owners = [], maintenanceEntries = [], onFocusSection, onFocusTask }) {
 
   /* ── Leaf tasks (no children) ────────────────────────── */
   const leafTasks = useMemo(
@@ -13,7 +13,7 @@ export default function SummaryDashboard({ tasks = [], maintenanceEntries = [], 
   const stats = useMemo(() => {
     const total      = leafTasks.length;
     const completed  = leafTasks.filter((t) => t.dateFinished || t.status === 'Completed').length;
-    const late       = leafTasks.filter((t) => isLate(t.targetDateFinish, t.dateFinished)).length;
+    const late       = leafTasks.filter((t) => isLate(t.targetDateFinish, t.dateFinished) && t.status !== 'Completed').length;
     const inProgress = leafTasks.filter((t) => t.status === 'In Progress' && !t.dateFinished).length;
     const notStarted = total - completed - inProgress;
     return {
@@ -48,7 +48,7 @@ export default function SummaryDashboard({ tasks = [], maintenanceEntries = [], 
         const total     = leaves.length;
         const completedLeaves = leaves.filter((c) => c.dateFinished || c.status === 'Completed');
         const inProgLeaves    = leaves.filter((c) => c.status === 'In Progress' && !c.dateFinished);
-        const lateLeaves      = leaves.filter((c) => isLate(c.targetDateFinish, c.dateFinished));
+        const lateLeaves      = leaves.filter((c) => isLate(c.targetDateFinish, c.dateFinished) && c.status !== 'Completed');
         const notStart  = Math.max(0, total - completedLeaves.length - inProgLeaves.length);
         const pct       = total ? Math.round((completedLeaves.length / total) * 100) : 0;
         // derive earliest start / latest finish from children
@@ -68,19 +68,94 @@ export default function SummaryDashboard({ tasks = [], maintenanceEntries = [], 
           order: p.order ?? 0,
         };
       })
-      .sort((a, b) => a.order - b.order);
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
   }, [tasks]);
 
-  /* ── Recent completed ────────────────────────────────── */
+  /* ── Last 7 days Milestones ──────────────────────────── */
   const recentCompleted = useMemo(() => {
-    const n = new Date();
-    const today = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
-    
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const limitDate = sevenDaysAgo.toISOString().split('T')[0];
+
     return leafTasks
-      .filter((t) => t.dateFinished && t.dateFinished <= today)
-      .sort((a, b) => (b.dateFinished || '').localeCompare(a.dateFinished || ''))
-      .slice(0, 8);
+      .filter((t) => (t.status === 'Completed' || t.dateFinished) && t.isMilestone)
+      .filter((t) => {
+         const d = t.dateFinished || t.targetDateFinish;
+         return d && d >= limitDate;
+      })
+      .sort((a, b) => {
+         const dateA = a.dateFinished || a.targetDateFinish || '';
+         const dateB = b.dateFinished || b.targetDateFinish || '';
+         return dateB.localeCompare(dateA);
+      });
   }, [leafTasks]);
+
+  /* ── Currently Late ──────────────────────────────────── */
+  const currentlyLate = useMemo(() => {
+    return leafTasks
+      .filter((t) => isLate(t.targetDateFinish, t.dateFinished) && t.status !== 'Completed')
+      .sort((a, b) => (a.targetDateFinish || '').localeCompare(b.targetDateFinish || ''));
+  }, [leafTasks]);
+
+  /* ── Owners stats ────────────────────────────────────── */
+  const ownerStats = useMemo(() => {
+    if (!owners) return [];
+    
+    // Ordered predefined list
+    const predefinedOrder = ['Gavin', 'Trish', 'Chris', 'Jamie'];
+    
+    const statsList = owners.map(o => {
+      const oTasks = leafTasks.filter(t => t.ownerId === o.id);
+      const total = oTasks.length;
+      const completed = oTasks.filter((t) => t.dateFinished || t.status === 'Completed').length;
+      return {
+        ...o,
+        total,
+        completed,
+        pctCompleted: total ? Math.round((completed / total) * 100) : 0,
+      };
+    });
+
+    // Sort by predefined order, then by total tasks descending
+    statsList.sort((a, b) => {
+      const idxA = predefinedOrder.indexOf(a.name);
+      const idxB = predefinedOrder.indexOf(b.name);
+      
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return b.total - a.total;
+    });
+    
+    return statsList.filter(o => o.total > 0 || predefinedOrder.includes(o.name));
+  }, [leafTasks, owners]);
+
+  /* ── Repairs and Installations ─────────────────────────── */
+  const repairsAndInstalls = useMemo(() => {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const limitDate = sevenDaysAgo.toISOString().split('T')[0];
+
+    const manual = maintenanceEntries.map(e => ({
+      id: e.id,
+      name: e.description,
+      date: e.dateOfRepair || '',
+      status: 'Completed',
+    }));
+
+    const derived = tasks
+      .filter(t => t.status === 'Completed' && t.isHardware)
+      .map(t => ({
+        id: `derived-hardware-${t.id}`,
+        name: t.hardwareText || `Hardware installed for ${t.name}`,
+        date: t.dateFinished || t.targetDateFinish || '',
+        status: 'Completed',
+      }));
+
+    const all = [...manual, ...derived].filter(e => e.date && e.date >= limitDate);
+    all.sort((a, b) => b.date.localeCompare(a.date));
+    return all;
+  }, [maintenanceEntries, tasks]);
 
   if (leafTasks.length === 0) {
     return (
@@ -139,119 +214,97 @@ export default function SummaryDashboard({ tasks = [], maintenanceEntries = [], 
             <span className="dash-mini-num" style={{ color: '#94a3b8' }}>{stats.notStarted}</span>
             <span className="dash-mini-lbl">Not Started</span>
           </div>
-          <div className="dash-mini-pill">
-            <span className="dash-mini-num" style={{ color: '#ef4444' }}>{stats.late}</span>
-            <span className="dash-mini-lbl">Late</span>
-          </div>
         </div>
       </div>
 
-      {/* ══ SECTIONS TABLE ══════════════════════════════════════ */}
-      {sections.length > 0 && (
-        <div className="dash-sections-wrap glass-panel">
-          <div className="dash-sections-header">
-            <h3 className="dash-sections-title">📁 Section Status</h3>
-            <span className="dash-sections-hint">{sections.length} sections</span>
-          </div>
-          <table className="dash-sections-table">
-            <thead>
-              <tr>
-                <th>Section</th>
-                <th style={{ width: 90 }}>Progress</th>
-                <th style={{ width: 60 }}>Done</th>
-                <th style={{ width: 70 }}>In Prog.</th>
-                <th style={{ width: 60 }}>Late</th>
-                <th style={{ width: 70 }}>Not Start.</th>
-                <th style={{ width: 90 }}>Start</th>
-                <th style={{ width: 90 }}>Target End</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sections.map((s) => {
-                const barColor =
-                  s.pct === 100 ? '#10b981' :
-                  s.lateCount > 0 ? '#ef4444' :
-                  s.pct > 0 ? '#3b82f6' : '#475569';
-                return (
-                  <tr 
-                    key={s.id} 
-                    className={`dash-section-row ${s.pct === 100 ? 'dash-section-done' : ''}`}
-                    onClick={() => onFocusSection && onFocusSection(s.id)}
-                    style={{ cursor: onFocusSection ? 'pointer' : 'default' }}
-                  >
-                    <td className="dash-section-name">{s.name}</td>
-                    <td>
-                      <div className="dash-prog-track">
-                        <div
-                          className="dash-prog-fill"
-                          style={{ width: `${s.pct}%`, background: barColor }}
-                        />
-                        <span className="dash-prog-label">{s.pct}%</span>
-                      </div>
-                    </td>
-                    <td 
-                      className="dash-cell-num" 
-                      style={{ color: '#10b981', cursor: s.completedId && onFocusTask ? 'pointer' : 'inherit', textDecoration: s.completedId && onFocusTask ? 'underline' : 'none' }}
-                      onClick={(e) => {
-                        if (s.completedId && onFocusTask) {
-                          e.stopPropagation();
-                          onFocusTask(s.completedId);
-                        }
-                      }}
-                    >
-                      {s.completed}
-                    </td>
-                    <td 
-                      className="dash-cell-num" 
-                      style={{ color: '#3b82f6', cursor: s.inProgId && onFocusTask ? 'pointer' : 'inherit', textDecoration: s.inProgId && onFocusTask ? 'underline' : 'none' }}
-                      onClick={(e) => {
-                        if (s.inProgId && onFocusTask) {
-                          e.stopPropagation();
-                          onFocusTask(s.inProgId);
-                        }
-                      }}
-                    >
-                      {s.inProg}
-                    </td>
-                    <td 
-                      className="dash-cell-num" 
-                      style={{ color: s.lateCount > 0 ? '#ef4444' : '#64748b', cursor: s.lateId && onFocusTask ? 'pointer' : 'inherit', textDecoration: s.lateId && onFocusTask ? 'underline' : 'none' }}
-                      onClick={(e) => {
-                        if (s.lateId && onFocusTask) {
-                          e.stopPropagation();
-                          onFocusTask(s.lateId);
-                        }
-                      }}
-                    >
-                      {s.lateCount > 0 ? `⚠ ${s.lateCount}` : '—'}
-                    </td>
-                    <td className="dash-cell-num" style={{ color: '#94a3b8' }}>{s.notStart}</td>
-                    <td className="dash-cell-date">{s.start ? formatDate(s.start) : '—'}</td>
-                    <td className="dash-cell-date">{s.finish ? formatDate(s.finish) : '—'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* ══ RECENT ACTIVITY ═════════════════════════════════════ */}
-      {recentCompleted.length > 0 && (
-        <div className="dash-recent glass-panel">
-          <h3 className="dash-sections-title">🕐 Recently Completed</h3>
-          <div className="dash-recent-list">
-            {recentCompleted.map((t) => (
-              <div key={t.id} className="dash-recent-item">
-                <span className="dash-recent-dot" />
-                <span className="dash-recent-name">{t.name}</span>
-                <span className="dash-recent-date">{formatDate(t.dateFinished)}</span>
+      {/* ══ DUAL COLUMN LAYOUT ═════════════════════════════════ */}
+      <div className="dash-two-column" style={{ marginTop: '1.5rem' }}>
+        
+        {/* LEFT COLUMN: Owners */}
+        <div className="dash-col-left">
+          {ownerStats.map(o => {
+            const bar = o.pctCompleted;
+            return (
+              <div key={o.id} className="dash-summary-strip glass-panel" style={{ padding: '0.75rem 1.25rem', minHeight: 'auto', marginBottom: 0 }}>
+                <div className="dash-overall" style={{ flex: '1', minWidth: '160px' }}>
+                  <div className="dash-overall-ring" style={{ width: 44, height: 44 }}>
+                    <svg viewBox="0 0 44 44" className="dash-ring-svg">
+                      <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+                      <circle
+                        cx="22" cy="22" r="18" fill="none"
+                        stroke={bar === 100 ? '#10b981' : bar > 50 ? '#3b82f6' : '#f59e0b'}
+                        strokeWidth="5"
+                        strokeDasharray={`${(bar / 100) * 113.1} 113.1`}
+                        strokeLinecap="round"
+                        transform="rotate(-90 22 22)"
+                        style={{ transition: 'stroke-dasharray 0.8s ease' }}
+                      />
+                    </svg>
+                    <span className="dash-ring-pct" style={{ fontSize: '0.7rem' }}>{bar}%</span>
+                  </div>
+                  <div className="dash-overall-labels">
+                    <span className="dash-overall-title" style={{ fontSize: '1rem' }}>{o.name}</span>
+                    <span className="dash-overall-sub">{o.completed} of {o.total} done</span>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
 
+        {/* RIGHT COLUMN: Lists */}
+        <div className="dash-col-right">
+          
+          {/* Currently Late */}
+          <div className="dash-recent glass-panel">
+            <h3 className="dash-sections-title" style={{ color: '#ef4444' }}>⚠️ Currently Late</h3>
+            <div className="dash-recent-list">
+              {currentlyLate.length === 0 && <div style={{ opacity: 0.6, fontSize: '0.85rem' }}>No late tasks! 🎉</div>}
+              {currentlyLate.map((t) => (
+                <div key={t.id} className="dash-recent-item" onClick={() => onFocusTask && onFocusTask(t.id)} style={{ cursor: 'pointer' }}>
+                  <span className="dash-recent-dot" style={{ background: '#ef4444' }} />
+                  <span className="dash-recent-name">{t.name}</span>
+                  <span className="dash-recent-date" style={{ color: '#ef4444' }}>Due {formatDate(t.targetDateFinish)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Last 7 days Milestones */}
+          <div className="dash-recent glass-panel">
+            <h3 className="dash-sections-title" style={{ color: '#10b981' }}>✅ Last 7 days Milestones</h3>
+            <div className="dash-recent-list">
+              {recentCompleted.length === 0 && <div style={{ opacity: 0.6, fontSize: '0.85rem' }}>No milestones completed recently.</div>}
+              {recentCompleted.map((t) => (
+                <div key={t.id} className="dash-recent-item" onClick={() => onFocusTask && onFocusTask(t.id)} style={{ cursor: 'pointer' }}>
+                  <span className="dash-recent-dot" style={{ background: '#10b981' }} />
+                  <span className="dash-recent-name">{t.name}</span>
+                  <span className="dash-recent-date">{formatDate(t.dateFinished)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Repairs and Installations */}
+          <div className="dash-recent glass-panel">
+            <h3 className="dash-sections-title" style={{ color: '#3b82f6' }}>🔧 Last 7 days repairs and installations</h3>
+            <div className="dash-recent-list">
+              {repairsAndInstalls.length === 0 && <div style={{ opacity: 0.6, fontSize: '0.85rem' }}>No entries found.</div>}
+              {repairsAndInstalls.map((t) => (
+                <div key={t.id} className="dash-recent-item" onClick={() => { if (!t.id.startsWith('derived-')) { /* open maintenance log */ } }} style={{ cursor: 'pointer' }}>
+                  <span className="dash-recent-dot" style={{ background: '#3b82f6' }} />
+                  <span className="dash-recent-name">{t.name}</span>
+                  <span className="dash-recent-date" style={{ color: '#94a3b8' }}>
+                    {t.date ? formatDate(t.date) : 'No date'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+      </div>
     </div>
   );
 }

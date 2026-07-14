@@ -15,7 +15,7 @@ const EMPTY_ENTRY = {
   sectionId: '',
 };
 
-export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete, tasks = [] }) {
+export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete, tasks = [], readOnly = false }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_ENTRY });
@@ -200,9 +200,9 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+      <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
         <h2 className="section-title" style={{ marginBottom: 0 }}>📋 Event Log &amp; Milestones</h2>
-        <button className="btn btn--primary" onClick={openAdd}>+ Add Entry</button>
+        {!readOnly && <button className="btn btn--primary" onClick={openAdd}>+ Add Entry</button>}
       </div>
 
       {/* Add/Edit Form */}
@@ -354,12 +354,14 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
                               </span>
                             )}
                           </div>
-                          <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', marginLeft: '0.5rem' }}>
                             {!m.isDerived ? (
-                              <>
-                                <button className="btn btn--ghost btn--sm" style={{ padding: '2px 6px' }} onClick={() => openEdit(m)}>✏️</button>
-                                <button className="btn btn--danger btn--sm" style={{ padding: '2px 6px' }} onClick={() => handleDelete(m.id)}>🗑</button>
-                              </>
+                              !readOnly && (
+                                <>
+                                  <button className="btn btn--ghost btn--sm" style={{ padding: '2px 6px' }} onClick={() => openEdit(m)}>✏️</button>
+                                  <button className="btn btn--danger btn--sm" style={{ padding: '2px 6px' }} onClick={() => handleDelete(m.id)}>🗑️</button>
+                                </>
+                              )
                             ) : (
                               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', opacity: 0.6 }}>🔒 Auto</span>
                             )}
@@ -387,12 +389,14 @@ export default function MaintenanceLog({ entries = [], onAdd, onUpdate, onDelete
                               {r.description || r.notes || 'No notes'}
                             </span>
                           </div>
-                          <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', marginLeft: '0.5rem' }}>
                             {!r.isDerived ? (
-                              <>
-                                <button className="btn btn--ghost btn--sm" style={{ padding: '2px 6px' }} onClick={() => openEdit(r)}>✏️</button>
-                                <button className="btn btn--danger btn--sm" style={{ padding: '2px 6px' }} onClick={() => handleDelete(r.id)}>🗑</button>
-                              </>
+                              !readOnly && (
+                                <>
+                                  <button className="btn btn--ghost btn--sm" style={{ padding: '2px 6px' }} onClick={() => openEdit(r)}>✏️</button>
+                                  <button className="btn btn--danger btn--sm" style={{ padding: '2px 6px' }} onClick={() => handleDelete(r.id)}>🗑️</button>
+                                </>
+                              )
                             ) : (
                               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', opacity: 0.6 }}>🔒 Auto</span>
                             )}

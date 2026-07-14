@@ -2,7 +2,7 @@
    Layout — App Shell — Hawaii Project Manager
    ═══════════════════════════════════════════════════════════════ */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReportGenerator from './ReportGenerator.jsx';
 
 const NAV_ITEMS = [
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { id: 'completed',   icon: '✅', label: 'Completed' },
   { id: 'maintenance', icon: '📋', label: 'Event Log' },
   { id: 'vendors',     icon: '📇', label: 'Vendors' },
+  { id: 'owners',      icon: '👤', label: 'Owners' },
   { id: 'shopping',    icon: '🛒', label: 'Shopping List' },
 ];
 
@@ -28,11 +29,26 @@ const VIEW_TITLES = {
   completed:   'Completed Tasks',
   maintenance: 'Event Log',
   vendors:     'Vendors',
+  owners:      'Owners',
   shopping:    'Shopping List',
   import:      'Import Data',
 };
 
-export default function Layout({ currentView, onNavigate, children, tasks, maintenanceEntries }) {
+export default function Layout({ currentView, onNavigate, children, tasks, maintenanceEntries, lastSynced }) {
+  const [syncLabel, setSyncLabel] = useState('');
+
+  useEffect(() => {
+    if (!lastSynced) return;
+    const update = () => {
+      const secs = Math.floor((Date.now() - lastSynced) / 1000);
+      if (secs < 5)  setSyncLabel('just now');
+      else if (secs < 60) setSyncLabel(`${secs}s ago`);
+      else setSyncLabel(`${Math.floor(secs/60)}m ago`);
+    };
+    update();
+    const id = setInterval(update, 5000);
+    return () => clearInterval(id);
+  }, [lastSynced]);
   return (
     <div className="app-layout">
       {/* ── Sidebar ─────────────────────────────────────── */}
@@ -75,8 +91,16 @@ export default function Layout({ currentView, onNavigate, children, tasks, maint
           <h1 className="main-header-title">
             {VIEW_TITLES[currentView] || 'Hawaii Project Manager'}
           </h1>
-          {/* Report Generator lives here — visible on every screen */}
-          <ReportGenerator tasks={tasks} maintenanceEntries={maintenanceEntries} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {lastSynced && (
+              <span className="sync-indicator" title={`Data auto-refreshes every 30s. Last sync: ${syncLabel}`}>
+                <span className="sync-dot" />
+                Live · {syncLabel}
+              </span>
+            )}
+            {/* Report Generator lives here — visible on every screen */}
+            <ReportGenerator tasks={tasks} maintenanceEntries={maintenanceEntries} />
+          </div>
         </header>
 
         <div className="content-area">

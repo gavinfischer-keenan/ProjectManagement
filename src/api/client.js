@@ -161,3 +161,28 @@ export async function deleteVendorInteraction(vendorId, interactionId) {
   });
 }
 
+/* ── Owners ──────────────────────────────────────────────────── */
+
+export async function fetchOwners() {
+  return request('/owners');
+}
+
+export async function createOwner(owner) {
+  return request('/owners', {
+    method: 'POST',
+    body: JSON.stringify(owner),
+  });
+}
+
+export async function updateOwner(id, updates) {
+  return request(`/owners/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteOwner(id) {
+  return request(`/owners/${id}`, {
+    method: 'DELETE',
+  });
+}

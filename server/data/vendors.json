@@ -10,6 +10,165 @@
       "notes": "",
       "interactions": [],
       "createdAt": "2026-07-06"
+    },
+    {
+      "id": "a33077f7-4b61-4991-b144-3b23f4ef62e7",
+      "name": "Nathan Perez",
+      "company": "Mokulaua Home Inspections",
+      "phone": "",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-06"
+    },
+    {
+      "id": "24b5701d-01b3-4391-b92a-fb1e6d924567",
+      "name": "Jaslyn Silver",
+      "company": "Hanamura appraisal company",
+      "phone": "808-735-2600",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-08"
+    },
+    {
+      "id": "bb42acf7-96e5-4967-9133-f5b2e3809aa8",
+      "name": "Kenneth Bega",
+      "company": "Onpoint Cooling",
+      "email": "Kenneth Bega <onpoint.cooling.hawaii@gmail.com>",
+      "phone": "702-994-6158",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [
+        {
+          "id": "c8baa90a-4ff7-4e3b-b1e1-cb016c97415a",
+          "date": "2026-07-11",
+          "type": "email",
+          "notes": "coordinating payment",
+          "linkedTaskId": null
+        },
+        {
+          "id": "f4e7e595-ebe4-4664-82a9-574e63f0c3ef",
+          "date": "2026-07-10",
+          "type": "email",
+          "notes": "email accepting quote and copying Trish to get contact information shared sent.",
+          "linkedTaskId": null
+        },
+        {
+          "id": "22172e17-501b-4903-8341-9a1806f570e4",
+          "date": "2026-07-08",
+          "type": "email",
+          "notes": "Quote received",
+          "linkedTaskId": null
+        },
+        {
+          "id": "48826775-3c02-4a88-bc76-46213dba541a",
+          "date": "2026-07-10",
+          "type": "text",
+          "notes": "text accepting the quote",
+          "linkedTaskId": null
+        }
+      ],
+      "createdAt": "2026-07-10"
+    },
+    {
+      "id": "4894816f-4058-45fe-95dd-7735046c9d0c",
+      "name": "Brian",
+      "company": "electric",
+      "email": "",
+      "phone": "",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-10"
+    },
+    {
+      "id": "85d2a9b6-bcb7-4369-b8cd-f927473c32c2",
+      "name": "Terminix",
+      "company": "Terminiex",
+      "email": "",
+      "phone": "",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-10"
+    },
+    {
+      "id": "e3df4bf5-78c8-441e-81bd-e5d1f6397f19",
+      "name": "Amazon",
+      "company": "Amazon",
+      "email": "",
+      "phone": "",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-10"
+    },
+    {
+      "id": "e68b0154-8d32-488b-aeb6-bc68d99190ef",
+      "name": "",
+      "company": "ACCOUNTANT",
+      "email": "",
+      "phone": "",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-11"
+    },
+    {
+      "id": "fd51e9f0-7b90-4ebe-8967-70a07daba58a",
+      "name": "",
+      "company": "LAWYER",
+      "email": "",
+      "phone": "",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-11"
+    },
+    {
+      "id": "086dd288-7ad8-45fc-94c4-b530c59cc6a9",
+      "name": "",
+      "company": "SCHWAB",
+      "email": "",
+      "phone": "",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-11"
+    },
+    {
+      "id": "a90a9ffe-814a-4145-998b-9b97e06d2cdc",
+      "name": "",
+      "company": "Paddle out dudes",
+      "email": "",
+      "phone": "",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-11"
+    },
+    {
+      "id": "313d7540-8d2a-422f-ad1d-bd65f7981dcc",
+      "name": "Jun",
+      "company": "painter / handyman",
+      "email": "",
+      "phone": "808-285-8009",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-13"
     }
   ]
 }

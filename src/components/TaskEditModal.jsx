@@ -10,6 +10,7 @@ export default function TaskEditModal({
   task,
   allTasks,
   vendors = [],
+  owners = [],
   onSave,
   onClose,
   onShowMaintenancePrompt,
@@ -38,6 +39,7 @@ export default function TaskEditModal({
     isHardware:       task.isHardware || false,
     hardwareText:     task.hardwareText || '',
     vendorId:         task.vendorId || '',
+    ownerId:          task.ownerId  || '3fbda0f6-bca4-407b-a647-fda9e6ce777d',
   });
 
   const prevDateFinished = useRef(task.dateFinished || '');
@@ -367,6 +369,24 @@ export default function TaskEditModal({
                 <div className="form-checkbox-group">
                   <input className="form-checkbox" type="checkbox" id="delayed" checked={form.delayed} onChange={(e) => handleChange('delayed', e.target.checked)} />
                   <label htmlFor="delayed" className="form-label" style={{ textTransform: 'none', letterSpacing: 'normal' }}>Mark as Delayed</label>
+                </div>
+
+                {/* Owner */}
+                <div className="form-group" style={{ marginTop: '1rem' }}>
+                  <label className="form-label">👤 Owner</label>
+                  <select
+                    className="form-select"
+                    value={form.ownerId}
+                    onChange={e => handleChange('ownerId', e.target.value)}
+                  >
+                    <option value="">— Unassigned —</option>
+                    {[...owners]
+                      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                      .map(o => (
+                        <option key={o.id} value={o.id}>{o.name}</option>
+                      ))
+                    }
+                  </select>
                 </div>
 
                 {/* Creation Date (Read-only) */}

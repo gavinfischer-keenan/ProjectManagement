@@ -29,6 +29,9 @@ export default function VendorDetail({
     address:       vendor.address || '',
     accountNumber: vendor.accountNumber || '',
     notes:         vendor.notes || '',
+    onlineAccess:  vendor.onlineAccess || '',
+    username:      vendor.username || '',
+    password:      vendor.password || '',
   });
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -51,6 +54,9 @@ export default function VendorDetail({
       address:       vendor.address || '',
       accountNumber: vendor.accountNumber || '',
       notes:         vendor.notes || '',
+      onlineAccess:  vendor.onlineAccess || '',
+      username:      vendor.username || '',
+      password:      vendor.password || '',
     });
     setInteractions(vendor.interactions || []);
     setDirty(false);
@@ -68,6 +74,21 @@ export default function VendorDetail({
       setDirty(false);
     } finally {
       setSaving(false);
+    }
+  };
+
+  /* ── Link Helper ──────────────────────────────────────────── */
+  const handleOpenLink = (e) => {
+    e.preventDefault();
+    let url = form.onlineAccess.trim();
+    if (url) {
+      if (!/^https?:\/\//i.test(url)) {
+        url = 'https://' + url;
+      }
+      const newWin = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+        alert('Your browser blocked the new window. Please disable your pop-up blocker for this site to open external links automatically.');
+      }
     }
   };
 
@@ -178,6 +199,27 @@ export default function VendorDetail({
           <div className="form-group">
             <label className="form-label">Address</label>
             <input className="form-input" value={form.address} onChange={e => handleFieldChange('address', e.target.value)} placeholder="Street, City, State" />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">
+                Online Access Point 
+                {form.onlineAccess && (
+                  <button className="btn btn-ghost btn-sm" style={{ padding: '0 4px', height: 'auto', marginLeft: '6px' }} onClick={handleOpenLink} title="Open in new window">
+                    🔗 Open
+                  </button>
+                )}
+              </label>
+              <input className="form-input" value={form.onlineAccess} onChange={e => handleFieldChange('onlineAccess', e.target.value)} placeholder="https://..." />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Username</label>
+              <input className="form-input" value={form.username} onChange={e => handleFieldChange('username', e.target.value)} placeholder="Username" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Password/PIN</label>
+              <input className="form-input" value={form.password} onChange={e => handleFieldChange('password', e.target.value)} placeholder="Password or PIN" />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Notes &amp; Details</label>

@@ -1,0 +1,36 @@
+{
+  "owners": [
+    {
+      "id": "3fbda0f6-bca4-407b-a647-fda9e6ce777d",
+      "name": "Gavin",
+      "email": "gavinfischer@gmail.com",
+      "phone": "760-212-4988",
+      "notes": "",
+      "createdAt": "2026-07-11"
+    },
+    {
+      "id": "717a43f1-88a6-4b7c-9067-337b1e3578b6",
+      "name": "Trish",
+      "email": "lilmurles@gmail.com",
+      "phone": "",
+      "notes": "",
+      "createdAt": "2026-07-11"
+    },
+    {
+      "id": "5f186746-541a-4526-a933-6ea3bb5058f1",
+      "name": "Chris",
+      "email": "",
+      "phone": "",
+      "notes": "",
+      "createdAt": "2026-07-11"
+    },
+    {
+      "id": "5467b4ee-8eb8-48ff-9633-8956352c4db9",
+      "name": "Jamie",
+      "email": "",
+      "phone": "",
+      "notes": "",
+      "createdAt": "2026-07-11"
+    }
+  ]
+}
