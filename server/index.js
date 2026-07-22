@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -8,6 +9,10 @@ import maintenanceRouter from './routes/maintenance.js';
 import importRouter from './routes/import.js';
 import vendorsRouter from './routes/vendors.js';
 import ownersRouter from './routes/owners.js';
+import assetsRouter from './routes/assets.js';
+import warrantiesRouter from './routes/warranties.js';
+import purgeRouter from './routes/purge.js';
+import healthRouter from './routes/health.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,13 +35,16 @@ app.use('/api/maintenance', maintenanceRouter);
 app.use('/api/import', importRouter);
 app.use('/api/vendors', vendorsRouter);
 app.use('/api/owners', ownersRouter);
+app.use('/api/assets', assetsRouter);
+app.use('/api/warranties', warrantiesRouter);
+app.use('/api/purge', purgeRouter);
+app.use('/api/health', healthRouter);
 
 // Production: serve Vite build
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, '..', 'dist');
   app.use(express.static(distPath));
 
-  // SPA fallback — serve index.html for any non-API route
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });

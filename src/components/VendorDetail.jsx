@@ -25,9 +25,12 @@ export default function VendorDetail({
   const [form, setForm] = useState({
     name:          vendor.name || '',
     company:       vendor.company || '',
+    category:      vendor.category || '',
     phone:         vendor.phone || '',
+    email:         vendor.email || '',
     address:       vendor.address || '',
     accountNumber: vendor.accountNumber || '',
+    website:       vendor.website || '',
     notes:         vendor.notes || '',
     onlineAccess:  vendor.onlineAccess || '',
     username:      vendor.username || '',
@@ -50,9 +53,12 @@ export default function VendorDetail({
     setForm({
       name:          vendor.name || '',
       company:       vendor.company || '',
+      category:      vendor.category || '',
       phone:         vendor.phone || '',
+      email:         vendor.email || '',
       address:       vendor.address || '',
       accountNumber: vendor.accountNumber || '',
+      website:       vendor.website || '',
       notes:         vendor.notes || '',
       onlineAccess:  vendor.onlineAccess || '',
       username:      vendor.username || '',
@@ -78,9 +84,9 @@ export default function VendorDetail({
   };
 
   /* ── Link Helper ──────────────────────────────────────────── */
-  const handleOpenLink = (e) => {
+  const handleOpenLink = (e, urlStr) => {
     e.preventDefault();
-    let url = form.onlineAccess.trim();
+    let url = (urlStr || '').trim();
     if (url) {
       if (!/^https?:\/\//i.test(url)) {
         url = 'https://' + url;
@@ -181,6 +187,10 @@ export default function VendorDetail({
               <label className="form-label">Company</label>
               <input className="form-input" value={form.company} onChange={e => handleFieldChange('company', e.target.value)} placeholder="Company name" />
             </div>
+            <div className="form-group">
+              <label className="form-label">Category</label>
+              <input className="form-input" value={form.category} onChange={e => handleFieldChange('category', e.target.value)} placeholder="e.g. house appraiser, painter" />
+            </div>
           </div>
           <div className="form-row">
             <div className="form-group">
@@ -203,15 +213,28 @@ export default function VendorDetail({
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">
+                Website 
+                {form.website && (
+                  <button className="btn btn-ghost btn-sm" style={{ padding: '0 4px', height: 'auto', marginLeft: '6px' }} onClick={(e) => handleOpenLink(e, form.website)} title="Open in new window">
+                    🔗 Open
+                  </button>
+                )}
+              </label>
+              <input className="form-input" value={form.website} onChange={e => handleFieldChange('website', e.target.value)} placeholder="https://..." />
+            </div>
+            <div className="form-group">
+              <label className="form-label">
                 Online Access Point 
                 {form.onlineAccess && (
-                  <button className="btn btn-ghost btn-sm" style={{ padding: '0 4px', height: 'auto', marginLeft: '6px' }} onClick={handleOpenLink} title="Open in new window">
+                  <button className="btn btn-ghost btn-sm" style={{ padding: '0 4px', height: 'auto', marginLeft: '6px' }} onClick={(e) => handleOpenLink(e, form.onlineAccess)} title="Open in new window">
                     🔗 Open
                   </button>
                 )}
               </label>
               <input className="form-input" value={form.onlineAccess} onChange={e => handleFieldChange('onlineAccess', e.target.value)} placeholder="https://..." />
             </div>
+          </div>
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label">Username</label>
               <input className="form-input" value={form.username} onChange={e => handleFieldChange('username', e.target.value)} placeholder="Username" />

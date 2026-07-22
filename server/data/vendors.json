@@ -44,6 +44,13 @@
       "notes": "",
       "interactions": [
         {
+          "id": "3f6ab073-dbae-4327-b976-5634877d88f6",
+          "date": "2026-07-16",
+          "type": "email",
+          "notes": "Project paused until we have $20K cash - waiting for death certificate. he acknoledged and we wait...",
+          "linkedTaskId": null
+        },
+        {
           "id": "c8baa90a-4ff7-4e3b-b1e1-cb016c97415a",
           "date": "2026-07-11",
           "type": "email",
@@ -169,6 +176,110 @@
       "notes": "",
       "interactions": [],
       "createdAt": "2026-07-13"
+    },
+    {
+      "id": "ea53612c-61e2-4d3c-98be-b10551b9ce53",
+      "name": "Andres Harnisch ",
+      "company": "Harnisch and Company ",
+      "email": "andres.harnisch@gmail.com",
+      "phone": "808 398 7775",
+      "address": "",
+      "accountNumber": "",
+      "notes": "harnischandco.com",
+      "interactions": [
+        {
+          "id": "8ba6b37a-adf7-44bb-a7c3-e89f88e67f60",
+          "date": "2026-07-15",
+          "type": "email",
+          "notes": "Pictures of Okadu and maybe wife pictures sent as a pdf",
+          "linkedTaskId": null
+        }
+      ],
+      "createdAt": "2026-07-16"
+    },
+    {
+      "id": "4815036c-acb6-4238-9589-da621da71d18",
+      "name": "VV",
+      "company": "CJ Plumbing",
+      "email": "cjplumbing808@gmail.com",
+      "phone": "808 226 1887",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [
+        {
+          "id": "4f131a6b-e1bd-4122-abd6-c5933b25f601",
+          "date": "2026-07-16",
+          "type": "phone",
+          "notes": "Set up for See-Mal to come visit and get quote",
+          "linkedTaskId": null
+        }
+      ],
+      "createdAt": "2026-07-16"
+    },
+    {
+      "id": "17ade78a-f624-47b7-bd04-a4587f9d75c9",
+      "name": "Chris Bates",
+      "company": "CB Painting",
+      "email": "chrisbatespainting@hawaii.rr.com",
+      "phone": "808 371 3193",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [
+        {
+          "id": "a70b86dd-cd15-48d3-86b1-8f0d03ab2120",
+          "date": "2026-07-17",
+          "type": "phone",
+          "notes": "Phone call introduction - he will text when he can visit - maybe today",
+          "linkedTaskId": null
+        }
+      ],
+      "createdAt": "2026-07-16"
+    },
+    {
+      "id": "d8e14fb5-a615-4e9a-ad84-461b2e192045",
+      "name": "Aaron Sharpe",
+      "company": "Sharpe - roofing",
+      "email": "",
+      "phone": "",
+      "address": "",
+      "accountNumber": "",
+      "notes": "",
+      "interactions": [],
+      "createdAt": "2026-07-16"
+    },
+    {
+      "id": "2942e095-8120-4ce3-a55d-7354c5a7063b",
+      "name": "Mapa",
+      "company": "Tonga rock",
+      "email": "",
+      "phone": "",
+      "address": "",
+      "accountNumber": "",
+      "category": "",
+      "website": "",
+      "onlineAccess": "",
+      "username": "",
+      "password": "",
+      "notes": "",
+      "interactions": [
+        {
+          "id": "f93d390f-1cc8-4d79-bdff-95daf378a1a9",
+          "date": "2026-07-20",
+          "type": "phone",
+          "notes": "deal changed... $3000 for the pile and all the rock - paid $1000 ",
+          "linkedTaskId": null
+        },
+        {
+          "id": "6923bb72-6860-4a21-99f3-79bb326dc195",
+          "date": "2026-07-16",
+          "type": "text",
+          "notes": "He stopped by - bid of $1500 accepted - $500 on Monday morning as starting payment - talked about trash removal as well when he gets here on monday",
+          "linkedTaskId": null
+        }
+      ],
+      "createdAt": "2026-07-17"
     }
   ]
 }

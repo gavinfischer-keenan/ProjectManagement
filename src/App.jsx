@@ -56,7 +56,7 @@ export default function App() {
   const refreshTasks = useCallback(async () => {
     try {
       const data = await fetchTasks();
-      setTasks(Array.isArray(data) ? data : []);
+      const arr = data?.tasks ?? data; setTasks(Array.isArray(arr) ? arr : []);
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
     }
@@ -65,7 +65,7 @@ export default function App() {
   const refreshMaintenance = useCallback(async () => {
     try {
       const data = await fetchMaintenance();
-      setMaintenanceEntries(Array.isArray(data) ? data : []);
+      const mArr = data?.maintenance ?? data; setMaintenanceEntries(Array.isArray(mArr) ? mArr : []);
     } catch (err) {
       console.error('Failed to fetch maintenance:', err);
     }
@@ -74,7 +74,7 @@ export default function App() {
   const refreshVendors = useCallback(async () => {
     try {
       const data = await fetchVendors();
-      setVendors(Array.isArray(data) ? data : []);
+      const vArr = data?.vendors ?? data; setVendors(Array.isArray(vArr) ? vArr : []);
     } catch (err) {
       console.error('Failed to fetch vendors:', err);
     }
@@ -83,7 +83,7 @@ export default function App() {
   const refreshOwners = useCallback(async () => {
     try {
       const data = await fetchOwners();
-      setOwners(Array.isArray(data) ? data : []);
+      const oArr = data?.owners ?? data; setOwners(Array.isArray(oArr) ? oArr : []);
     } catch (err) {
       console.error('Failed to fetch owners:', err);
     }

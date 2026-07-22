@@ -1,130 +1,63 @@
-import { Router } from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { v4 as uuidv4 } from 'uuid';
+import express from 'express';
+import pool from '../db.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const router = express.Router();
 
-const DATA_FILE = path.join(__dirname, '..', 'data', 'owners.json');
-
-const router = Router();
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function readOwners() {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    const data = JSON.parse(raw);
-    return data.owners || [];
-  } catch {
-    return [];
-  }
-}
-
-function writeOwners(owners) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify({ owners }, null, 2), 'utf-8');
-}
-
-function todayISO() {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
-}
-
-// ---------------------------------------------------------------------------
-// GET /  — list all owners (sorted by name)
-// ---------------------------------------------------------------------------
-router.get('/', (_req, res) => {
-  try {
-    const owners = readOwners();
-    owners.sort((a, b) => (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase()));
-    return res.json(owners);
-  } catch (err) {
-    console.error('GET /owners error:', err);
-    return res.status(500).json({ error: 'Failed to read owners' });
-  }
+router.get('/', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM owners ORDER BY created_at ASC');
+        const owners = result.rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            phone: row.phone,
+            notes: row.notes,
+            createdAt: row.created_at
+        }));
+        res.json({ owners });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
-// ---------------------------------------------------------------------------
-// POST /  — create a new owner
-// ---------------------------------------------------------------------------
-router.post('/', (req, res) => {
-  try {
-    const { name } = req.body;
-    if (!name || !name.trim()) {
-      return res.status(400).json({ error: 'name is required' });
+router.post('/', async (req, res) => {
+    const { id, name, email, phone, notes, createdAt } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO owners (id, name, email, phone, notes, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [id, name, email, phone, notes, createdAt || new Date()]
+        );
+        res.status(201).json(req.body);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
-
-    const owners = readOwners();
-    const newOwner = {
-      id: uuidv4(),
-      name: name.trim(),
-      email: req.body.email || '',
-      phone: req.body.phone || '',
-      notes: req.body.notes || '',
-      createdAt: todayISO(),
-    };
-
-    owners.push(newOwner);
-    writeOwners(owners);
-    return res.status(201).json(newOwner);
-  } catch (err) {
-    console.error('POST /owners error:', err);
-    return res.status(500).json({ error: 'Failed to create owner' });
-  }
 });
 
-// ---------------------------------------------------------------------------
-// PUT /:id  — update owner fields
-// ---------------------------------------------------------------------------
-router.put('/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    const owners = readOwners();
-    const index = owners.findIndex((o) => o.id === id);
-
-    if (index === -1) {
-      return res.status(404).json({ error: 'Owner not found' });
+router.put('/:id', async (req, res) => {
+    const { name, email, phone, notes } = req.body;
+    try {
+        await pool.query(
+            `UPDATE owners SET name=$1, email=$2, phone=$3, notes=$4 WHERE id=$5`,
+            [name, email, phone, notes, req.params.id]
+        );
+        res.json(req.body);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
-
-    const updatable = ['name', 'email', 'phone', 'notes'];
-    for (const field of updatable) {
-      if (field in req.body) {
-        owners[index][field] = req.body[field];
-      }
-    }
-
-    writeOwners(owners);
-    return res.json(owners[index]);
-  } catch (err) {
-    console.error('PUT /owners/:id error:', err);
-    return res.status(500).json({ error: 'Failed to update owner' });
-  }
 });
 
-// ---------------------------------------------------------------------------
-// DELETE /:id  — delete an owner
-// ---------------------------------------------------------------------------
-router.delete('/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    const owners = readOwners();
-    const index = owners.findIndex((o) => o.id === id);
-
-    if (index === -1) {
-      return res.status(404).json({ error: 'Owner not found' });
+router.delete('/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM owners WHERE id=$1', [req.params.id]);
+        res.status(204).end();
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
-
-    owners.splice(index, 1);
-    writeOwners(owners);
-    return res.json({ deleted: id });
-  } catch (err) {
-    console.error('DELETE /owners/:id error:', err);
-    return res.status(500).json({ error: 'Failed to delete owner' });
-  }
 });
 
 export default router;

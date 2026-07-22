@@ -77,18 +77,28 @@ export default function SummaryDashboard({ tasks = [], owners = [], maintenanceE
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const limitDate = sevenDaysAgo.toISOString().split('T')[0];
 
-    return leafTasks
+    const manual = maintenanceEntries
+      .filter(e => e.isMilestone)
+      .map(e => ({
+        id: `manual-milestone-${e.id}`,
+        name: e.milestoneText || e.description,
+        date: e.dateOfRepair || '',
+        status: 'Completed',
+      }));
+
+    const derived = leafTasks
       .filter((t) => (t.status === 'Completed' || t.dateFinished) && t.isMilestone)
-      .filter((t) => {
-         const d = t.dateFinished || t.targetDateFinish;
-         return d && d >= limitDate;
-      })
-      .sort((a, b) => {
-         const dateA = a.dateFinished || a.targetDateFinish || '';
-         const dateB = b.dateFinished || b.targetDateFinish || '';
-         return dateB.localeCompare(dateA);
-      });
-  }, [leafTasks]);
+      .map((t) => ({
+        id: `derived-milestone-${t.id}`,
+        name: t.milestoneText || `Milestone achieved: ${t.name}`,
+        date: t.dateFinished || t.targetDateFinish || '',
+        status: 'Completed',
+      }));
+
+    const all = [...manual, ...derived].filter(e => e.date && e.date >= limitDate);
+    all.sort((a, b) => b.date.localeCompare(a.date));
+    return all;
+  }, [maintenanceEntries, leafTasks]);
 
   /* ── Currently Late ──────────────────────────────────── */
   const currentlyLate = useMemo(() => {
@@ -136,7 +146,9 @@ export default function SummaryDashboard({ tasks = [], owners = [], maintenanceE
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const limitDate = sevenDaysAgo.toISOString().split('T')[0];
 
-    const manual = maintenanceEntries.map(e => ({
+    const manual = maintenanceEntries
+      .filter(e => !e.isMilestone)
+      .map(e => ({
       id: e.id,
       name: e.description,
       date: e.dateOfRepair || '',
@@ -276,10 +288,21 @@ export default function SummaryDashboard({ tasks = [], owners = [], maintenanceE
             <div className="dash-recent-list">
               {recentCompleted.length === 0 && <div style={{ opacity: 0.6, fontSize: '0.85rem' }}>No milestones completed recently.</div>}
               {recentCompleted.map((t) => (
-                <div key={t.id} className="dash-recent-item" onClick={() => onFocusTask && onFocusTask(t.id)} style={{ cursor: 'pointer' }}>
+                <div 
+                  key={t.id} 
+                  className="dash-recent-item" 
+                  onClick={() => {
+                    if (t.id.toString().startsWith('derived-milestone-') && onFocusTask) {
+                      onFocusTask(t.id.replace('derived-milestone-', ''));
+                    }
+                  }} 
+                  style={{ cursor: 'pointer' }}
+                >
                   <span className="dash-recent-dot" style={{ background: '#10b981' }} />
                   <span className="dash-recent-name">{t.name}</span>
-                  <span className="dash-recent-date">{formatDate(t.dateFinished)}</span>
+                  <span className="dash-recent-date" style={{ color: '#10b981' }}>
+                    {t.date ? `Done ${formatDate(t.date)}` : 'No date'}
+                  </span>
                 </div>
               ))}
             </div>

@@ -1,222 +1,104 @@
-import { Router } from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import express from 'express';
+import pool from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const router = express.Router();
 
-const DATA_FILE = path.join(__dirname, '..', 'data', 'vendors.json');
+router.get('/', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM vendors ORDER BY created_at ASC');
+        const vendors = result.rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            company: row.company,
+            email: row.email,
+            phone: row.phone,
+            address: row.address,
+            accountNumber: row.account_number,
+            category: row.category,
+            website: row.website,
+            onlineAccess: row.online_access,
+            username: row.username,
+            password: row.password,
+            notes: row.notes,
+            createdAt: row.created_at ? row.created_at.toISOString().split('T')[0] : null
+        }));
 
-const router = Router();
+        const interRes = await pool.query('SELECT * FROM vendor_interactions');
+        const interactionsByVendor = {};
+        interRes.rows.forEach(i => {
+            if(!interactionsByVendor[i.vendor_id]) interactionsByVendor[i.vendor_id] = [];
+            interactionsByVendor[i.vendor_id].push({
+                id: i.id,
+                date: i.interaction_date ? i.interaction_date.toISOString().split('T')[0] : null,
+                type: i.interaction_type,
+                notes: i.notes,
+                linkedTaskId: i.linked_task_id
+            });
+        });
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+        vendors.forEach(v => v.interactions = interactionsByVendor[v.id] || []);
 
-function readVendors() {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    const data = JSON.parse(raw);
-    return data.vendors || [];
-  } catch {
-    return [];
-  }
-}
-
-function writeVendors(vendors) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify({ vendors }, null, 2), 'utf-8');
-}
-
-function todayISO() {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
-}
-
-// ---------------------------------------------------------------------------
-// GET /  — list all vendors (sorted by company then name)
-// ---------------------------------------------------------------------------
-router.get('/', (_req, res) => {
-  try {
-    const vendors = readVendors();
-    vendors.sort((a, b) => {
-      const compA = (a.company || '').toLowerCase();
-      const compB = (b.company || '').toLowerCase();
-      if (compA !== compB) return compA.localeCompare(compB);
-      return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
-    });
-    return res.json(vendors);
-  } catch (err) {
-    console.error('GET /vendors error:', err);
-    return res.status(500).json({ error: 'Failed to read vendors' });
-  }
-});
-
-// ---------------------------------------------------------------------------
-// POST /  — create a new vendor
-// ---------------------------------------------------------------------------
-router.post('/', (req, res) => {
-  try {
-    const { name, company } = req.body;
-    if (!name && !company) {
-      return res.status(400).json({ error: 'name or company is required' });
+        res.json({ vendors });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
-
-    const vendors = readVendors();
-    const newVendor = {
-      id: uuidv4(),
-      name: req.body.name || '',
-      company: req.body.company || '',
-      email: req.body.email || '',
-      phone: req.body.phone || '',
-      address: req.body.address || '',
-      accountNumber: req.body.accountNumber || '',
-      notes: req.body.notes || '',
-      interactions: [],
-      createdAt: todayISO(),
-    };
-
-    vendors.push(newVendor);
-    writeVendors(vendors);
-    return res.status(201).json(newVendor);
-  } catch (err) {
-    console.error('POST /vendors error:', err);
-    return res.status(500).json({ error: 'Failed to create vendor' });
-  }
 });
 
-// ---------------------------------------------------------------------------
-// PUT /:id  — update vendor fields
-// ---------------------------------------------------------------------------
-router.put('/:id', (req, res) => {
-  try {
+router.post('/', async (req, res) => {
+    const id = uuidv4();
+    const { name, company, email, phone, address, accountNumber, category, website, onlineAccess, username, password, notes } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO vendors (id, name, company, email, phone, address, account_number, category, website, online_access, username, password, notes, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())`,
+            [id, name||'', company||'', email||'', phone||'', address||'', accountNumber||'', category||'', website||'', onlineAccess||'', username||'', password||'', notes||'']
+        );
+        res.status(201).json({ id, ...req.body });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    const vendors = readVendors();
-    const index = vendors.findIndex((v) => v.id === id);
+    const { name, company, email, phone, address, accountNumber, category, website, onlineAccess, username, password, notes, interactions } = req.body;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query(
+            `UPDATE vendors SET name=$1, company=$2, email=$3, phone=$4, address=$5, account_number=$6, category=$7, website=$8, online_access=$9, username=$10, password=$11, notes=$12 WHERE id=$13`,
+            [name, company, email, phone, address, accountNumber, category, website, onlineAccess, username, password, notes, id]
+        );
 
-    if (index === -1) {
-      return res.status(404).json({ error: 'Vendor not found' });
+        if (interactions) {
+            await client.query('DELETE FROM vendor_interactions WHERE vendor_id = $1', [id]);
+            for(const i of interactions) {
+                await client.query('INSERT INTO vendor_interactions (id, vendor_id, interaction_date, interaction_type, notes, linked_task_id) VALUES ($1, $2, $3, $4, $5, $6)',
+                  [i.id || uuidv4(), id, i.date, i.type, i.notes, i.linkedTaskId]);
+            }
+        }
+        await client.query('COMMIT');
+        res.json({ id, ...req.body });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    } finally {
+        client.release();
     }
-
-    const updatable = ['name', 'company', 'email', 'phone', 'address', 'accountNumber', 'notes'];
-    for (const field of updatable) {
-      if (field in req.body) {
-        vendors[index][field] = req.body[field];
-      }
-    }
-
-    writeVendors(vendors);
-    return res.json(vendors[index]);
-  } catch (err) {
-    console.error('PUT /vendors/:id error:', err);
-    return res.status(500).json({ error: 'Failed to update vendor' });
-  }
 });
 
-// ---------------------------------------------------------------------------
-// DELETE /:id  — delete a vendor
-// ---------------------------------------------------------------------------
-router.delete('/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    const vendors = readVendors();
-    const index = vendors.findIndex((v) => v.id === id);
-
-    if (index === -1) {
-      return res.status(404).json({ error: 'Vendor not found' });
+router.delete('/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM vendors WHERE id=$1', [req.params.id]);
+        res.status(204).end();
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
-
-    vendors.splice(index, 1);
-    writeVendors(vendors);
-    return res.json({ deleted: id });
-  } catch (err) {
-    console.error('DELETE /vendors/:id error:', err);
-    return res.status(500).json({ error: 'Failed to delete vendor' });
-  }
-});
-
-// ---------------------------------------------------------------------------
-// POST /:id/interactions  — add a CRM interaction log entry
-// ---------------------------------------------------------------------------
-router.post('/:id/interactions', (req, res) => {
-  try {
-    const { id } = req.params;
-    const vendors = readVendors();
-    const vendor = vendors.find((v) => v.id === id);
-
-    if (!vendor) {
-      return res.status(404).json({ error: 'Vendor not found' });
-    }
-
-    const newInteraction = {
-      id: uuidv4(),
-      date: req.body.date || todayISO(),
-      type: req.body.type || 'phone',  // phone | text | email
-      notes: req.body.notes || '',
-      linkedTaskId: req.body.linkedTaskId || null,
-    };
-
-    if (!vendor.interactions) vendor.interactions = [];
-    vendor.interactions.unshift(newInteraction); // newest first
-    writeVendors(vendors);
-    return res.status(201).json(newInteraction);
-  } catch (err) {
-    console.error('POST /vendors/:id/interactions error:', err);
-    return res.status(500).json({ error: 'Failed to add interaction' });
-  }
-});
-
-// ---------------------------------------------------------------------------
-// PUT /:id/interactions/:iid  — edit an interaction
-// ---------------------------------------------------------------------------
-router.put('/:id/interactions/:iid', (req, res) => {
-  try {
-    const { id, iid } = req.params;
-    const vendors = readVendors();
-    const vendor = vendors.find((v) => v.id === id);
-
-    if (!vendor) return res.status(404).json({ error: 'Vendor not found' });
-
-    const idx = (vendor.interactions || []).findIndex((i) => i.id === iid);
-    if (idx === -1) return res.status(404).json({ error: 'Interaction not found' });
-
-    const updatable = ['date', 'type', 'notes', 'linkedTaskId'];
-    for (const field of updatable) {
-      if (field in req.body) {
-        vendor.interactions[idx][field] = req.body[field];
-      }
-    }
-
-    writeVendors(vendors);
-    return res.json(vendor.interactions[idx]);
-  } catch (err) {
-    console.error('PUT /vendors/:id/interactions/:iid error:', err);
-    return res.status(500).json({ error: 'Failed to update interaction' });
-  }
-});
-
-// ---------------------------------------------------------------------------
-// DELETE /:id/interactions/:iid  — delete an interaction
-// ---------------------------------------------------------------------------
-router.delete('/:id/interactions/:iid', (req, res) => {
-  try {
-    const { id, iid } = req.params;
-    const vendors = readVendors();
-    const vendor = vendors.find((v) => v.id === id);
-
-    if (!vendor) return res.status(404).json({ error: 'Vendor not found' });
-
-    const idx = (vendor.interactions || []).findIndex((i) => i.id === iid);
-    if (idx === -1) return res.status(404).json({ error: 'Interaction not found' });
-
-    vendor.interactions.splice(idx, 1);
-    writeVendors(vendors);
-    return res.json({ deleted: iid });
-  } catch (err) {
-    console.error('DELETE /vendors/:id/interactions/:iid error:', err);
-    return res.status(500).json({ error: 'Failed to delete interaction' });
-  }
 });
 
 export default router;

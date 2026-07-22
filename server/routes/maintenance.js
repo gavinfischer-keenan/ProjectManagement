@@ -1,140 +1,72 @@
-import { Router } from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import express from 'express';
+import pool from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const router = express.Router();
 
-const DATA_FILE = path.join(__dirname, '..', 'data', 'maintenance.json');
-
-const router = Router();
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function readEntries() {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    const data = JSON.parse(raw);
-    return data.entries || [];
-  } catch {
-    return [];
-  }
-}
-
-function writeEntries(entries) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify({ entries }, null, 2), 'utf-8');
-}
-
-// ---------------------------------------------------------------------------
-// GET /  — list all maintenance entries
-// ---------------------------------------------------------------------------
-router.get('/', (_req, res) => {
-  try {
-    const entries = readEntries();
-    return res.json(entries);
-  } catch (err) {
-    console.error('GET /maintenance error:', err);
-    return res.status(500).json({ error: 'Failed to read maintenance entries' });
-  }
+router.get('/', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM maintenance ORDER BY created_at ASC');
+        const maintenance = result.rows.map(row => ({
+            id: row.id,
+            description: row.description,
+            taskId: row.task_id,
+            dateOfRepair: row.date_of_repair ? row.date_of_repair.toISOString().split('T')[0] : null,
+            dateWhenFixed: row.date_when_fixed ? row.date_when_fixed.toISOString().split('T')[0] : null,
+            newInstallation: row.new_installation,
+            newInstallationDate: row.new_installation_date ? row.new_installation_date.toISOString().split('T')[0] : null,
+            notes: row.notes,
+            isMilestone: row.is_milestone,
+            milestoneText: row.milestone_text,
+            sectionId: row.section_id,
+            sectionName: row.section_name,
+            createdAt: row.created_at ? row.created_at.toISOString().split('T')[0] : null
+        }));
+        res.json({ maintenance });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
-// ---------------------------------------------------------------------------
-// POST /  — create a new maintenance entry
-// ---------------------------------------------------------------------------
-router.post('/', (req, res) => {
-  try {
-    const { description } = req.body;
-
-    if (!description || typeof description !== 'string' || description.trim() === '') {
-      return res.status(400).json({ error: 'description is required' });
+router.post('/', async (req, res) => {
+    const id = uuidv4();
+    const { description, taskId, dateOfRepair, dateWhenFixed, newInstallation, newInstallationDate, notes, isMilestone, milestoneText, sectionId, sectionName } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO maintenance (id, description, task_id, date_of_repair, date_when_fixed, new_installation, new_installation_date, notes, is_milestone, milestone_text, section_id, section_name, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())`,
+            [id, description, taskId, dateOfRepair, dateWhenFixed, newInstallation, newInstallationDate, notes, isMilestone, milestoneText, sectionId, sectionName]
+        );
+        res.status(201).json({ id, ...req.body });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
-
-    const entries = readEntries();
-
-    const newEntry = {
-      id: uuidv4(),
-      description: description.trim(),
-      taskId: req.body.taskId ?? null,
-      dateOfRepair: req.body.dateOfRepair ?? null,
-      dateWhenFixed: req.body.dateWhenFixed ?? null,
-      newInstallation: req.body.newInstallation ?? false,
-      newInstallationDate: req.body.newInstallationDate ?? null,
-      notes: req.body.notes ?? '',
-      // Milestone fields
-      isMilestone: req.body.isMilestone ?? false,
-      milestoneText: req.body.milestoneText ?? '',
-      sectionId: req.body.sectionId ?? null,
-      sectionName: req.body.sectionName ?? '',
-    };
-
-    entries.push(newEntry);
-    writeEntries(entries);
-
-    return res.status(201).json(newEntry);
-  } catch (err) {
-    console.error('POST /maintenance error:', err);
-    return res.status(500).json({ error: 'Failed to create maintenance entry' });
-  }
 });
 
-// ---------------------------------------------------------------------------
-// PUT /:id  — update a maintenance entry (partial updates allowed)
-// ---------------------------------------------------------------------------
-router.put('/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    const entries = readEntries();
-    const index = entries.findIndex((e) => e.id === id);
-
-    if (index === -1) {
-      return res.status(404).json({ error: 'Maintenance entry not found' });
+router.put('/:id', async (req, res) => {
+    const { description, taskId, dateOfRepair, dateWhenFixed, newInstallation, newInstallationDate, notes, isMilestone, milestoneText, sectionId, sectionName } = req.body;
+    try {
+        await pool.query(
+            `UPDATE maintenance SET description=$1, task_id=$2, date_of_repair=$3, date_when_fixed=$4, new_installation=$5, new_installation_date=$6, notes=$7, is_milestone=$8, milestone_text=$9, section_id=$10, section_name=$11 WHERE id=$12`,
+            [description, taskId, dateOfRepair, dateWhenFixed, newInstallation, newInstallationDate, notes, isMilestone, milestoneText, sectionId, sectionName, req.params.id]
+        );
+        res.json(req.body);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
-
-    const updatable = [
-      'description', 'taskId', 'dateOfRepair', 'dateWhenFixed',
-      'newInstallation', 'newInstallationDate', 'notes',
-      'isMilestone', 'milestoneText', 'sectionId', 'sectionName',
-    ];
-
-    for (const field of updatable) {
-      if (field in req.body) {
-        entries[index][field] = req.body[field];
-      }
-    }
-
-    writeEntries(entries);
-    return res.json(entries[index]);
-  } catch (err) {
-    console.error('PUT /maintenance/:id error:', err);
-    return res.status(500).json({ error: 'Failed to update maintenance entry' });
-  }
 });
 
-// ---------------------------------------------------------------------------
-// DELETE /:id  — delete a maintenance entry
-// ---------------------------------------------------------------------------
-router.delete('/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    const entries = readEntries();
-    const index = entries.findIndex((e) => e.id === id);
-
-    if (index === -1) {
-      return res.status(404).json({ error: 'Maintenance entry not found' });
+router.delete('/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM maintenance WHERE id=$1', [req.params.id]);
+        res.status(204).end();
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
-
-    entries.splice(index, 1);
-    writeEntries(entries);
-
-    return res.json({ deleted: id });
-  } catch (err) {
-    console.error('DELETE /maintenance/:id error:', err);
-    return res.status(500).json({ error: 'Failed to delete maintenance entry' });
-  }
 });
 
 export default router;

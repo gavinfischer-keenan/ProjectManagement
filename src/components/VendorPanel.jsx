@@ -17,7 +17,7 @@ export default function VendorPanel({
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'tile'
   const [selectedVendorId, setSelectedVendorId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newForm, setNewForm] = useState({ name: '', company: '', email: '', phone: '', address: '', accountNumber: '', notes: '', onlineAccess: '', username: '', password: '' });
+  const [newForm, setNewForm] = useState({ name: '', company: '', category: '', phone: '', email: '', address: '', accountNumber: '', onlineAccess: '', username: '', password: '' });
   const [addSaving, setAddSaving] = useState(false);
 
   /* ── Sort vendors alphabetically by company then name ──── */
@@ -118,6 +118,10 @@ export default function VendorPanel({
               <input className="form-input" value={newForm.company} onChange={e => setNewForm(p => ({ ...p, company: e.target.value }))} placeholder="ABC Contractors" autoFocus />
             </div>
             <div className="form-group">
+              <label className="form-label">Category</label>
+              <input className="form-input" value={newForm.category} onChange={e => setNewForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. house appraiser, painter" />
+            </div>
+            <div className="form-group">
               <label className="form-label">Name</label>
               <input className="form-input" value={newForm.name} onChange={e => setNewForm(p => ({ ...p, name: e.target.value }))} placeholder="Contact name" />
             </div>
@@ -156,7 +160,7 @@ export default function VendorPanel({
           </div>
           <div className="vendor-add-form-actions">
             <button className="btn btn-ghost btn-sm" onClick={() => setShowAddForm(false)}>Cancel</button>
-            <button className="btn btn-primary btn-sm" onClick={handleCreate} disabled={addSaving || (!newForm.name.trim() && !newForm.company.trim())}>
+            <button className="btn btn-primary btn-sm" onClick={handleCreate} disabled={addSaving || (!newForm.name.trim() && !newForm.company.trim() && !newForm.category.trim())}>
               {addSaving ? 'Creating…' : '✅ Create Vendor'}
             </button>
           </div>
@@ -179,9 +183,10 @@ export default function VendorPanel({
             <thead>
               <tr>
                 <th>Company</th>
+                <th>Category</th>
                 <th>Name</th>
                 <th>Phone</th>
-                <th>Email</th>
+                <th style={{ width: 150, maxWidth: 150 }}>Email</th>
                 <th style={{ width: 60 }}>Tasks</th>
               </tr>
             </thead>
@@ -196,9 +201,10 @@ export default function VendorPanel({
                     title="Click to view details"
                   >
                     <td className="vendor-list-company">{v.company || '—'}</td>
+                    <td className="vendor-list-category">{v.category || '—'}</td>
                     <td className="vendor-list-name">{v.name || '—'}</td>
                     <td className="vendor-list-phone">{v.phone || '—'}</td>
-                    <td className="vendor-list-email">{v.email || '—'}</td>
+                    <td className="vendor-list-email" style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={v.email || ''}>{v.email || '—'}</td>
                     <td className="vendor-list-tasks">
                       {taskCount > 0 && <span className="vendor-task-count">{taskCount}</span>}
                     </td>
@@ -224,6 +230,7 @@ export default function VendorPanel({
                 title="Click to view details"
               >
                 <div className="vendor-tile-company">{v.company || v.name || 'Vendor'}</div>
+                {v.category && <div className="vendor-tile-category" style={{ fontSize: '0.85em', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{v.category}</div>}
                 {v.company && v.name && <div className="vendor-tile-name">{v.name}</div>}
                 {v.phone && <div className="vendor-tile-phone">📞 {v.phone}</div>}
                 {v.email && <div className="vendor-tile-email" style={{ fontSize: '0.85em', opacity: 0.8, marginBottom: '0.25rem' }}>📧 {v.email}</div>}
