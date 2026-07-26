@@ -22,9 +22,22 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type'],
+  origin: function(origin, callback) {
+    // Allow: no-origin (same-origin / server-to-server), localhost dev, LAN
+    if (!origin
+      || origin.startsWith('http://localhost')
+      || origin.startsWith('http://192.168.1.')
+      || origin.startsWith('http://192.168.1.19')  // HA
+      || origin.startsWith('http://192.168.1.110') // Self
+    ) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for now — internal LAN only
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 }));
 
 app.use(express.json());

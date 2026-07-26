@@ -11,7 +11,7 @@ const todayISO = () => {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
 };
 
-const TYPE_LABELS = { phone: '📞 Phone', text: '💬 Text', email: '📧 Email' };
+const TYPE_LABELS = { phone: '📞 Phone', text: '💬 Text', email: '📧 Email', in_person: '🤝 In Person' };
 
 export default function VendorDetail({
   vendor,
@@ -308,6 +308,7 @@ export default function VendorDetail({
                     <option value="phone">📞 Phone</option>
                     <option value="text">💬 Text</option>
                     <option value="email">📧 Email</option>
+                    <option value="in_person">🤝 In Person</option>
                   </select>
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>

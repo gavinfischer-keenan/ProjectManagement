@@ -67,8 +67,14 @@ export default function VendorPanel({
         onUpdate={async (id, updates) => {
           await handleUpdate(id, updates);
           // Refresh local copy so detail view re-renders with new values
-          const refreshed = await fetchVendors();
-          onVendorsChange(refreshed);
+          try {
+            const refreshed = await fetchVendors();
+            onVendorsChange(refreshed);
+          } catch (e) {
+            console.warn('Vendor refresh after save failed, using local merge:', e.message);
+            // Fallback: merge updates locally instead of re-fetching
+            onVendorsChange(vendors.map(v => v.id === id ? { ...v, ...updates } : v));
+          }
         }}
         onDelete={handleDelete}
         onBack={() => setSelectedVendorId(null)}
