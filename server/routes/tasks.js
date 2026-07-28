@@ -2,6 +2,14 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../db.js';
 
+// Safely convert a Date or ISO string to YYYY-MM-DD
+function toISODate(val) {
+  if (!val) return null;
+  if (typeof val === "string") return val.split("T")[0];
+  if (val instanceof Date) return val.toISOString().split("T")[0];
+  return String(val).split("T")[0];
+}
+
 const router = express.Router();
 
 function getDeltaDays(oldIso, newIso) {
@@ -172,9 +180,9 @@ router.put('/:id', async (req, res) => {
       if (predRes.rows.length > 0) {
         const pred = predRes.rows[0];
         const forcedStart = pred.date_finished || pred.target_date_finish;
-        if (forcedStart && (!currentFields.target_date_start || currentFields.target_date_start.toISOString() !== forcedStart.toISOString())) {
-          const forcedStartIso = forcedStart.toISOString().split('T')[0];
-          const oldStartIso = currentFields.target_date_start ? currentFields.target_date_start.toISOString().split('T')[0] : null;
+        if (forcedStart && (!currentFields.target_date_start || toISODate(currentFields.target_date_start) !== toISODate(forcedStart))) {
+          const forcedStartIso = toISODate(forcedStart);
+          const oldStartIso = currentFields.target_date_start ? toISODate(currentFields.target_date_start) : null;
           currentFields.target_date_start = forcedStartIso;
           if (oldStartIso && currentFields.target_date_finish) {
              const oldFinIso = typeof currentFields.target_date_finish === 'string' ? currentFields.target_date_finish : currentFields.target_date_finish.toISOString().split('T')[0];
@@ -183,6 +191,16 @@ router.put('/:id', async (req, res) => {
           }
         }
       }
+    }
+
+    // Sanitize: empty strings → null for date/nullable columns
+    const dateFields = ["target_date_start", "target_date_finish", "date_started", "date_finished"];
+    for (const f of dateFields) {
+      if (currentFields[f] === "" || currentFields[f] === undefined) currentFields[f] = null;
+    }
+    const nullableFields = ["depends_on_task_id", "duration_days", "vendor_id"];
+    for (const f of nullableFields) {
+      if (currentFields[f] === "" || currentFields[f] === undefined) currentFields[f] = null;
     }
 
     // Save task updates
