@@ -42,7 +42,8 @@ export default function OwnerPanel({ owners = [], onOwnersChange, tasks = [], on
   const handleUpdate = async (id, updates) => {
     const updated = await updateOwner(id, updates);
     // Refresh from server so detail re-renders
-    const refreshed = await fetchOwners();
+    const resp = await fetchOwners();
+    const refreshed = resp?.owners ?? resp;
     onOwnersChange(refreshed);
     return updated;
   };

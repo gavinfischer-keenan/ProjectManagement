@@ -68,7 +68,8 @@ export default function VendorPanel({
           await handleUpdate(id, updates);
           // Refresh local copy so detail view re-renders with new values
           try {
-            const refreshed = await fetchVendors();
+            const resp = await fetchVendors();
+            const refreshed = resp?.vendors ?? resp;
             onVendorsChange(refreshed);
           } catch (e) {
             console.warn('Vendor refresh after save failed, using local merge:', e.message);
