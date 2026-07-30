@@ -101,4 +101,50 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+
+// ── Interaction CRUD (individual entries) ─────────────────────
+router.post('/:id/interactions', async (req, res) => {
+    const vendorId = req.params.id;
+    const interactionId = uuidv4();
+    const { date, type, notes, linkedTaskId } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO vendor_interactions (id, vendor_id, interaction_date, interaction_type, notes, linked_task_id) VALUES ($1, $2, $3, $4, $5, $6)',
+            [interactionId, vendorId, date, type, notes || '', linkedTaskId || null]
+        );
+        res.status(201).json({ id: interactionId, date, type, notes, linkedTaskId });
+    } catch (err) {
+        console.error('[Vendor Interaction POST]', err);
+        res.status(500).json({ error: 'Failed to add interaction' });
+    }
+});
+
+router.put('/:id/interactions/:interactionId', async (req, res) => {
+    const { id: vendorId, interactionId } = req.params;
+    const { date, type, notes, linkedTaskId } = req.body;
+    try {
+        await pool.query(
+            'UPDATE vendor_interactions SET interaction_date=$1, interaction_type=$2, notes=$3, linked_task_id=$4 WHERE id=$5 AND vendor_id=$6',
+            [date, type, notes || '', linkedTaskId || null, interactionId, vendorId]
+        );
+        res.json({ id: interactionId, date, type, notes, linkedTaskId });
+    } catch (err) {
+        console.error('[Vendor Interaction PUT]', err);
+        res.status(500).json({ error: 'Failed to update interaction' });
+    }
+});
+
+router.delete('/:id/interactions/:interactionId', async (req, res) => {
+    try {
+        await pool.query(
+            'DELETE FROM vendor_interactions WHERE id=$1 AND vendor_id=$2',
+            [req.params.interactionId, req.params.id]
+        );
+        res.status(204).end();
+    } catch (err) {
+        console.error('[Vendor Interaction DELETE]', err);
+        res.status(500).json({ error: 'Failed to delete interaction' });
+    }
+});
+
 export default router;
