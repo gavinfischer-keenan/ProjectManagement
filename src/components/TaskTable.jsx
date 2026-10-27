@@ -2,6 +2,7 @@
    TaskTable — Main Project Tracking Table — Hawaii Project Manager
    ═══════════════════════════════════════════════════════════════ */
 
+import { reorderTasks } from '../api/client.js';
 import React, { useState, useMemo, useCallback } from 'react';
 import { buildTree, flattenTree, applyDependencyDepths } from '../utils/treeUtils.js';
 import TaskRow from './TaskRow.jsx';
@@ -189,11 +190,7 @@ export default function TaskTable({
             if (toShift.length > 0) {
               const orderings = toShift.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
               try {
-                await fetch('/api/tasks/reorder', {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ orderings }),
-                });
+                await reorderTasks(orderings);
               } catch (err) {
                 console.error('Failed to shift task orders:', err);
               }
@@ -235,11 +232,7 @@ export default function TaskTable({
       if (toShift.length > 0) {
         const orderings = toShift.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
         try {
-          await fetch('/api/tasks/reorder', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderings }),
-          });
+          await reorderTasks(orderings);
         } catch (err) {
           console.error('Failed to shift task orders:', err);
         }
@@ -300,11 +293,7 @@ export default function TaskTable({
     if (siblings.length > 0) {
       const orderings = siblings.map((t) => ({ id: t.id, order: (t.order ?? 0) + 1 }));
       try {
-        await fetch('/api/tasks/reorder', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderings }),
-        });
+        await reorderTasks(orderings);
       } catch (err) {
         console.error('Failed to shift task orders for new task:', err);
       }
@@ -378,11 +367,7 @@ export default function TaskTable({
         const sourceOrderings = remainingSourceSiblings.map((t, idx) => ({ id: t.id, order: idx }));
         if (sourceOrderings.length > 0) {
           try {
-            await fetch('/api/tasks/reorder', {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderings: sourceOrderings }),
-            });
+            await reorderTasks(sourceOrderings);
           } catch(e) { console.error(e); }
         }
       }
@@ -403,11 +388,7 @@ export default function TaskTable({
 
       const targetOrderings = targetSiblings.map((t, idx) => ({ id: t.id, order: idx }));
       try {
-        await fetch('/api/tasks/reorder', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderings: targetOrderings }),
-        });
+        await reorderTasks(targetOrderings);
       } catch (err) { console.error('Failed to update orders:', err); }
 
       // 3. Update parentId for all moved tasks, and dependencies for the head task
@@ -487,7 +468,7 @@ export default function TaskTable({
   );
 
   /* ── Render ─────────────────────────────────────────────── */
-  if (tasks.length === 0) {
+  if (tasks.length === 0 && !createModal) {
     return (
       <div>
         <div className="table-toolbar">

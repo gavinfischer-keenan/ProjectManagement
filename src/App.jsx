@@ -89,6 +89,13 @@ export default function App() {
     }
   }, []);
 
+  const handleDataReload = useCallback(async () => {
+    setLoading(true);
+    await Promise.all([refreshTasks(), refreshMaintenance(), refreshVendors(), refreshOwners()]);
+    setLoading(false);
+    setLastSynced(Date.now());
+  }, [refreshTasks, refreshMaintenance, refreshVendors, refreshOwners]);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -318,7 +325,7 @@ export default function App() {
   /* ── Render ─────────────────────────────────────────────────── */
   return (
     <>
-      <Layout currentView={currentView} onNavigate={setCurrentView} tasks={tasks} maintenanceEntries={maintenanceEntries} lastSynced={lastSynced}>
+      <Layout currentView={currentView} onNavigate={setCurrentView} tasks={tasks} maintenanceEntries={maintenanceEntries} lastSynced={lastSynced} onDataReload={handleDataReload}>
         {renderContent()}
       </Layout>
       <PdfReportView tasks={tasks} maintenanceEntries={maintenanceEntries} vendors={vendors} owners={owners} />

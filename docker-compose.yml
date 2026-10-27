@@ -1,0 +1,9 @@
+services:
+  hawaii-project-management:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hawaii-project-management
+    restart: unless-stopped
+    ports:
+      - "8082:80"

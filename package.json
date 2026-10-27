@@ -7,11 +7,12 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "vite",
     "dev:server": "node --watch server/index.js",
-    "build": "vite build",
+    "build": "vite build && node scripts/build-offline.mjs",
     "start": "node server/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:web": "vitest run src/__tests__"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -21,7 +22,7 @@
     "multer": "^1.4.5-lts.1",
     "pg": "^8.22.0",
     "uuid": "^10.0.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -30,6 +31,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/ui": "^4.1.9",
     "concurrently": "^9.1.0",
+    "fake-indexeddb": "^6.2.6",
     "jsdom": "^29.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

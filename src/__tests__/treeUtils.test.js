@@ -17,16 +17,16 @@ const makeTasks = () => [
 
 // ── buildTree ───────────────────────────────────────────────────
 describe('buildTree', () => {
-  it('creates top-level roots', () => {
+  it('creates alphabetically sorted top-level roots', () => {
     const tree = buildTree(makeTasks());
     expect(tree.length).toBe(2);
-    expect(tree[0].id).toBe('root1');
-    expect(tree[1].id).toBe('root2');
+    expect(tree[0].id).toBe('root2');
+    expect(tree[1].id).toBe('root1');
   });
 
   it('nests children under correct parent', () => {
     const tree = buildTree(makeTasks());
-    const section = tree[0];
+    const section = tree.find(t => t.id === 'root1');
     expect(section.children.length).toBe(2);
     expect(section.children[0].id).toBe('task1');
   });

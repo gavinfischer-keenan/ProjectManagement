@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import ReportGenerator from './ReportGenerator.jsx';
+import LocalFileManager from './LocalFileManager.jsx';
 
 const NAV_ITEMS = [
   { id: 'dashboard',   icon: '📊', label: 'Dashboard' },
@@ -34,7 +35,7 @@ const VIEW_TITLES = {
   import:      'Import Data',
 };
 
-export default function Layout({ currentView, onNavigate, children, tasks, maintenanceEntries, lastSynced }) {
+export default function Layout({ currentView, onNavigate, children, tasks, maintenanceEntries, lastSynced, onDataReload }) {
   const [syncLabel, setSyncLabel] = useState('');
 
   useEffect(() => {
@@ -49,13 +50,14 @@ export default function Layout({ currentView, onNavigate, children, tasks, maint
     const id = setInterval(update, 5000);
     return () => clearInterval(id);
   }, [lastSynced]);
+
   return (
     <div className="app-layout">
       {/* ── Sidebar ─────────────────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          <span className="sidebar-logo">🏠</span>
-          <span className="sidebar-title">Hawaii PM</span>
+          <img src={`${import.meta.env.BASE_URL}brand/bigfin-squid-logo.jpg`} alt="" style={{width:48,height:48,objectFit:"contain",borderRadius:8}} />
+          <span className="sidebar-title">Bigfin Squid<small style={{display:"block",fontSize:11}}>Hawaii Project Manager</small></span>
         </div>
 
         <nav className="sidebar-nav">
@@ -91,18 +93,23 @@ export default function Layout({ currentView, onNavigate, children, tasks, maint
           <h1 className="main-header-title">
             {VIEW_TITLES[currentView] || 'Hawaii Project Manager'}
           </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {/* Local File & Storage Manager */}
+            <LocalFileManager onDataReload={onDataReload} />
+
             {lastSynced && (
-              <span className="sync-indicator" title={`Data auto-refreshes every 30s. Last sync: ${syncLabel}`}>
+              <span className="sync-indicator" title={`Last refreshed from local browser storage: ${syncLabel}`}>
                 <span className="sync-dot" />
-                Live · {syncLabel}
+                Local · {syncLabel}
               </span>
             )}
-            {/* Report Generator lives here — visible on every screen */}
+
+            {/* Report Generator */}
             <ReportGenerator tasks={tasks} maintenanceEntries={maintenanceEntries} />
           </div>
         </header>
 
+        <div style={{padding:"8px 24px",fontSize:12}}>Project data stays in this browser. Export JSON backups regularly; clearing browser storage removes local records. <a href="/">TripoFisch</a></div>
         <div className="content-area">
           {children}
         </div>

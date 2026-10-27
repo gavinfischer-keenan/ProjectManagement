@@ -1,3 +1,6 @@
+import { parseExcelTasks } from '../storage/excelImporter.js';
+import { dbImportAllData } from '../storage/db.js';
+import { triggerAutoSave } from '../storage/fileSystem.js';
 import React, { useState, useRef, useCallback } from 'react';
 
 export default function ImportWizard({ onImportComplete }) {
@@ -34,15 +37,8 @@ export default function ImportWizard({ onImportComplete }) {
     setLoading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch('/api/import', { method: 'POST', body: formData });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || 'Upload failed');
-      }
-      const result = await res.json();
-      setPreview(result.tasks || result);
+      const tasks = await parseExcelTasks(file);
+      setPreview(tasks);
       setStep(2);
     } catch (err) {
       setError(err.message);
@@ -55,7 +51,8 @@ export default function ImportWizard({ onImportComplete }) {
   async function handleConfirm() {
     setLoading(true);
     try {
-      // The import already happened on upload; we just confirm
+      await dbImportAllData({ tasks: preview });
+      triggerAutoSave();
       setStep(3);
       if (onImportComplete) onImportComplete();
     } catch (err) {
@@ -194,7 +191,7 @@ export default function ImportWizard({ onImportComplete }) {
               disabled={!file || loading}
               onClick={handleUpload}
             >
-              {loading ? 'Uploading…' : 'Upload & Preview'}
+              {loading ? 'Reading…' : 'Read & Preview'}
             </button>
           </div>
 

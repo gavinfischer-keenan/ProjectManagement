@@ -1,3 +1,9 @@
+# Bigfin Squid · Hawaii Project Manager — Web Edition
+
+Live at https://projectmanager.11mosswood.us/ . The public app is browser-only, with empty initial data, IndexedDB storage, JSON backups and session-based local file linking where supported. It is an installable PWA; installation is browser/device dependent. No server compute or database is deployed.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md). Use `npm ci`, `npm run test:web`, `npm run build`; only publish `dist/`. Export regular backups. The original server-based implementation remains below for separate use; its `/api` endpoints and database are not used by the public web edition.
+
 # Hawaii Project Manager (v1.0.1)
 
 > ⚠️ **v1.0.1 — NEEDS BUG CHECKING**
