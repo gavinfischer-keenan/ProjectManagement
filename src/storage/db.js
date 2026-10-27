@@ -73,7 +73,7 @@ async function ensureSeedData(db) {
     const ownerStore = tx.objectStore('owners');
     seedOwners.forEach(o => ownerStore.put(o));
 
-    await new Promise((res) => { tx.oncomplete = res; });
+    await new Promise((resolve,reject) => { tx.oncomplete = resolve; tx.onerror = () => reject(tx.error || new Error('Storage transaction failed')); tx.onabort = () => reject(tx.error || new Error('Storage transaction aborted')); });
   }
 }
 
@@ -156,9 +156,25 @@ export async function dbCreateTask(taskData) {
   return newTask;
 }
 
+async function mutateTasks(change) {
+ const db = await getDB();
+ return new Promise((resolve,reject) => {
+  const tx = db.transaction('tasks','readwrite');
+  const store = tx.objectStore('tasks');
+  let result;
+  tx.oncomplete = () => resolve(result);
+  tx.onerror = () => reject(tx.error || new Error('Task transaction failed'));
+  tx.onabort = () => reject(tx.error || new Error('Task transaction aborted'));
+  const request = store.getAll();
+  request.onsuccess = () => {
+   try { result = change(request.result,store); }
+   catch(error) { tx.abort(); reject(error); }
+  };
+ });
+}
+
 export async function dbUpdateTask(id, updates) {
-  const db = await getDB();
-  const tasks = await getAllFromStore(db, 'tasks');
+ return mutateTasks((tasks,store) => {
   const taskMap = {};
   tasks.forEach(t => { taskMap[t.id] = { ...t }; });
 
@@ -191,21 +207,13 @@ export async function dbUpdateTask(id, updates) {
     cascadeTaskDates(taskMap, id, deltaDays);
   }
 
-  // Save all modified tasks in a transaction
-  const tx = db.transaction('tasks', 'readwrite');
-  const store = tx.objectStore('tasks');
-  for (const t of Object.values(taskMap)) {
-    store.put(t);
-  }
-  await new Promise((res) => { tx.oncomplete = res; });
-
+  for (const task of Object.values(taskMap)) store.put(task);
   return taskMap[id];
+ });
 }
 
 export async function dbDeleteTask(id) {
-  const db = await getDB();
-  // Also recursively delete children
-  const tasks = await getAllFromStore(db, 'tasks');
+ return mutateTasks((tasks,store) => {
   const toDelete = new Set([id]);
 
   let added = true;
@@ -219,13 +227,9 @@ export async function dbDeleteTask(id) {
     }
   }
 
-  const tx = db.transaction('tasks', 'readwrite');
-  const store = tx.objectStore('tasks');
-  for (const tid of toDelete) {
-    store.delete(tid);
-  }
-  await new Promise((res) => { tx.oncomplete = res; });
+  for (const taskId of toDelete) store.delete(taskId);
   return true;
+ });
 }
 
 export async function dbReorderTasks(orderings) {
@@ -247,7 +251,7 @@ export async function dbReorderTasks(orderings) {
     };
   }
 
-  await new Promise((res) => { tx.oncomplete = res; });
+  await new Promise((resolve,reject) => { tx.oncomplete = resolve; tx.onerror = () => reject(tx.error || new Error('Storage transaction failed')); tx.onabort = () => reject(tx.error || new Error('Storage transaction aborted')); });
   return true;
 }
 

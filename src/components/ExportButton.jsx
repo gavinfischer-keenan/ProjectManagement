@@ -104,7 +104,7 @@ export default function ExportButton({ tasks = [], maintenanceEntries = [] }) {
     XLSX.utils.book_append_sheet(wb, wsMaint, 'Event Log');
 
     /* Trigger download */
-    XLSX.writeFile(wb, 'Hawaii_Project_Plan_Export.xlsx');
+    XLSX.writeFile(wb, 'Bigfin_Squid_Project_Export.xlsx');
   }
 
   return (

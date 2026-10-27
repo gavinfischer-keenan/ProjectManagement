@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   API Client — Hawaii Project Manager (100% Client-Side Mode)
+   API Client — Project management software (100% Client-Side Mode)
    Uses IndexedDB + File System Access API for Local Persistence
    ═══════════════════════════════════════════════════════════════ */
 

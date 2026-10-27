@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   GanttBar — Inline Timeline Bar — Hawaii Project Manager
+   GanttBar — Inline Timeline Bar — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import React from 'react';

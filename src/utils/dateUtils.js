@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Date Utilities — Hawaii Project Manager
+   Date Utilities — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 /**

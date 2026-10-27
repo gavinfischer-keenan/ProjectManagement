@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   PercentCell — Gradient-filled Percentage — Hawaii Project Manager
+   PercentCell — Gradient-filled Percentage — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import React from 'react';

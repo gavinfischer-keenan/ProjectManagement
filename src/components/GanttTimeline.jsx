@@ -1,4 +1,4 @@
-/* GanttTimeline — Scrollable Gantt Chart — Hawaii Project Manager */
+/* GanttTimeline — Scrollable Gantt Chart — Project management software */
 import React, { useMemo, useRef } from 'react';
 import { buildTree, flattenTree, applyDependencyDepths } from '../utils/treeUtils.js';
 import { isoToDate } from '../utils/dateUtils.js';

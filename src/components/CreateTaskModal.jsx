@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    CreateTaskModal — Add Task or Add Section
-   Hawaii Project Manager
+   Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useState, useEffect, useRef } from 'react';

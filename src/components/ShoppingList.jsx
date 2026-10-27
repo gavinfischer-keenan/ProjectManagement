@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    ShoppingList — Aggregated Supply Items Across All Tasks
-   Hawaii Project Manager
+   Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useMemo, useState } from 'react';

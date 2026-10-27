@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   TaskRow — Single Task Row — Hawaii Project Manager
+   TaskRow — Single Task Row — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useState, useRef, useEffect } from 'react';

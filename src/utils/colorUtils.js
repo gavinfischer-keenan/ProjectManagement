@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Color Utilities — Hawaii Project Manager
+   Color Utilities — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import { isBeforeTarget } from './dateUtils.js';

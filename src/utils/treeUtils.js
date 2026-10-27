@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Tree Utilities — Hawaii Project Manager
+   Tree Utilities — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 /**

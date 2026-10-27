@@ -37,7 +37,7 @@ function isRowSection(sheet, row) {
 
 export async function parseExcelTasks(file) {
   const arrayBuffer = await file.arrayBuffer();
-  const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true, cellDates: true });
+  const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true, cellDates: false });
 
   const sheetName = workbook.SheetNames.includes('Renovation Tracker')
     ? 'Renovation Tracker'

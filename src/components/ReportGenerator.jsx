@@ -236,7 +236,7 @@ export default function ReportGenerator({ tasks = [], maintenanceEntries = [] })
       const HR = pad(now.getHours());
       const MN = pad(now.getMinutes());
       const stamp = `${MM}_${DD}_${YY}__${HR}__${MN}`;
-      const baseFilename = `HAWAII_Project_Status_${stamp}`;
+      const baseFilename = `Bigfin_Squid_Project_Status_${stamp}`;
 
       if (selected === 'pdf') {
         setPdfModalState('generating');

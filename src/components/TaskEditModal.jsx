@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   TaskEditModal — Full Task Editor — Hawaii Project Manager
+   TaskEditModal — Full Task Editor — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useState, useEffect, useRef } from 'react';

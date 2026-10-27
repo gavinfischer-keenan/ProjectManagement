@@ -47,7 +47,7 @@ export async function openLocalProjectFile() {
 
   const [handle] = await window.showOpenFilePicker({
     types: [{
-      description: 'Hawaii PM Project JSON (*.json)',
+      description: 'Bigfin Squid Project JSON (*.json)',
       accept: { 'application/json': ['.json'] }
     }],
     multiple: false
@@ -92,9 +92,9 @@ export async function saveAsLocalProjectFile() {
   }
 
   const handle = await window.showSaveFilePicker({
-    suggestedName: activeFileName || 'Hawaii_Project_Plan.json',
+    suggestedName: activeFileName || 'Bigfin_Squid_Project.json',
     types: [{
-      description: 'Hawaii PM Project JSON (*.json)',
+      description: 'Bigfin Squid Project JSON (*.json)',
       accept: { 'application/json': ['.json'] }
     }]
   });
@@ -145,7 +145,7 @@ export async function exportBackupDownload() {
   const dateStr = new Date().toISOString().split('T')[0];
   const a = document.createElement('a');
   a.href = url;
-  a.download = `hawaii-pm-backup-${dateStr}.json`;
+  a.download = `bigfin-squid-backup-${dateStr}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

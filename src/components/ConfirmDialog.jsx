@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   ConfirmDialog — Reusable Confirmation — Hawaii Project Manager
+   ConfirmDialog — Reusable Confirmation — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useEffect, useRef } from 'react';

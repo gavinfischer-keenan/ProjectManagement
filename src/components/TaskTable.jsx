@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   TaskTable — Main Project Tracking Table — Hawaii Project Manager
+   TaskTable — Main Project Tracking Table — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import { reorderTasks } from '../api/client.js';

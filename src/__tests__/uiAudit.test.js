@@ -1,5 +1,5 @@
 /**
- * UI Audit Tests — Hawaii Project Manager
+ * UI Audit Tests — Project management software
  *
  * These tests verify that the UI layer correctly produces and renders
  * section vs task rows, and that the section creation flow sets taskType.

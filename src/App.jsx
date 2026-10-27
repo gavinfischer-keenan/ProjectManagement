@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   App — Root Component — Hawaii Project Manager
+   App — Root Component — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useState, useEffect, useCallback } from 'react';

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Layout — App Shell — Hawaii Project Manager
+   Layout — App Shell — Project management software
    ═══════════════════════════════════════════════════════════════ */
 
 import React, { useState, useEffect } from 'react';
@@ -57,7 +57,7 @@ export default function Layout({ currentView, onNavigate, children, tasks, maint
       <aside className="sidebar">
         <div className="sidebar-header">
           <img src={`${import.meta.env.BASE_URL}brand/bigfin-squid-logo.jpg`} alt="" style={{width:48,height:48,objectFit:"contain",borderRadius:8}} />
-          <span className="sidebar-title">Bigfin Squid<small style={{display:"block",fontSize:11}}>Hawaii Project Manager</small></span>
+          <span className="sidebar-title">Bigfin Squid<small style={{display:"block",fontSize:11}}>Project management software</small></span>
         </div>
 
         <nav className="sidebar-nav">
@@ -91,7 +91,7 @@ export default function Layout({ currentView, onNavigate, children, tasks, maint
       <main className="main-content">
         <header className="main-header">
           <h1 className="main-header-title">
-            {VIEW_TITLES[currentView] || 'Hawaii Project Manager'}
+            {VIEW_TITLES[currentView] || 'Project management software'}
           </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             {/* Local File & Storage Manager */}

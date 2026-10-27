@@ -1,4 +1,4 @@
-# Bigfin Squid / Hawaii Project Manager web deployment
+# Bigfin Squid / Project management software web deployment
 
 Production URL: https://projectmanager.11mosswood.us/app/ . Marketing page is the hostname root. Browser-local IndexedDB and explicit JSON import/export replace the legacy server API. Local file linking requires a supported browser and user permission; handles are session-only. Browser data is not a backup or cross-device sync.
 
@@ -10,6 +10,8 @@ The public edition must use empty src/storage/seedData.js. Never import server/d
 
 PWA installation depends on browser/device support and policy. It is not an executable installer and does not guarantee the absence of security warnings. Finish the first online load before expecting offline operation. New service worker versions activate when old app windows close.
 
-Changes: residual fetch API controls now local; Excel import previews before replacing only tasks; malformed imports validated before writes; transaction completion awaited; local-file auto-save failures surfaced. Existing utility tests updated to current alphabetic root sort; new local storage and empty-project UI regressions. 98 web tests pass. Legacy server database tests require their separate environment and are excluded from web tests.
+Changes: residual fetch API controls now local; Excel import previews before replacing only tasks; malformed imports validated before writes; transaction completion awaited; local-file auto-save failures surfaced. Existing utility tests updated to current alphabetic root sort; new local storage and empty-project UI regressions. 101 web tests pass. Legacy server database tests require their separate environment and are excluded from web tests.
 
 SheetJS upgraded to official 0.20.3 distribution. Dependency audit fixes applied. Remaining moderate advisories relate to legacy server uuid and Vitest tools, not deployed app assets; do not expose test/development servers. Large bundle warning is expected for spreadsheet/PDF support.
+
+Review fixes: task cascade reads/writes are atomic; aborted transactions reject; spreadsheet date cells stay numeric until ISO conversion. The legacy IndexedDB database key is retained to preserve existing local data.
